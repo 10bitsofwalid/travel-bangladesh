@@ -1,0 +1,17 @@
+body{
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #f4f7fa;
+}
+
+.navbar{
+    position: fixed;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 60px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: white;
+    z-index: 10;
+}
