@@ -1,0 +1,203 @@
+// ExploreBD Prisma Schema
+// Database: PostgreSQL with PostGIS
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CategoryType {
+  NATURE
+  HERITAGE
+  CULTURE
+  COMMUNITY
+}
+
+enum Difficulty {
+  EASY
+  MODERATE
+  CHALLENGING
+  EXTREME
+}
+
+enum UnescoStatus {
+  NOT_LISTED
+  TENTATIVE_LIST
+  WORLD_HERITAGE_SITE
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  AI_ASSISTED
+  VERIFIED_BY_EXPERT
+}
+
+enum UserRole {
+  EXPLORER
+  CONTRIBUTOR
+  MODERATOR
+  ADMIN
+}
+
+model Division {
+  id        String     @id @default(cuid())
+  name      String
+  bnName    String
+  slug      String     @unique
+  latitude  Float
+  longitude Float
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  districts    District[]
+  destinations Destination[]
+
+  @@map("divisions")
+}
+
+model District {
+  id         String     @id @default(cuid())
+  divisionId String
+  name       String
+  bnName     String
+  slug       String     @unique
+  latitude   Float
+  longitude  Float
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  division     Division      @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  destinations Destination[]
+
+  @@map("districts")
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  name        String
+  type        CategoryType
+  slug        String       @unique
+  icon        String
+  color       String
+  description String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  destinations Destination[]
+
+  @@map("categories")
+}
+
+model Destination {
+  id              String      @id @default(cuid())
+  name            String
+  bnName          String?
+  slug            String      @unique
+  summary         String
+  description     String
+  divisionId      String
+  districtId      String
+  categoryId      String
+  latitude        Float
+  longitude       Float
+  elevation       Float?
+  coverImage      String
+  gallery         String[]    @default([])
+  bestTimeToVisit String?
+  difficulty      Difficulty?
+  accessibility   String?
+  entryFee        String?
+  isFeatured      Boolean     @default(false)
+  published       Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  division        Division         @relation(fields: [divisionId], references: [id])
+  district        District         @relation(fields: [districtId], references: [id])
+  category        Category         @relation(fields: [categoryId], references: [id])
+  heritageDetail  HeritageDetail?
+  itineraryItems  ItineraryItem[]
+
+  @@index([latitude, longitude])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([categoryId])
+  @@map("destinations")
+}
+
+model HeritageDetail {
+  id                     String             @id @default(cuid())
+  destinationId          String             @unique
+  periodEra              String?
+  builtYear              String?
+  architecturalStyle     String?
+  historicalSignificance String
+  unescoStatus           UnescoStatus       @default(NOT_LISTED)
+  preservationStatus     String?
+  verificationStatus     VerificationStatus @default(UNVERIFIED)
+  verifiedBy             String?
+  verifiedAt             DateTime?
+  sources                Json               @default("[]")
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@map("heritage_details")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         UserRole  @default(EXPLORER)
+  avatar       String?
+  bio          String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  itineraries Itinerary[]
+
+  @@map("users")
+}
+
+model Itinerary {
+  id           String      @id @default(cuid())
+  userId       String
+  title        String
+  slug         String      @unique
+  summary      String
+  durationDays Int
+  season       String?
+  difficulty   Difficulty  @default(EASY)
+  isOfficial   Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items ItineraryItem[]
+
+  @@map("itineraries")
+}
+
+model ItineraryItem {
+  id            String      @id @default(cuid())
+  itineraryId   String
+  destinationId String
+  dayNumber     Int
+  orderIndex    Int
+  notes         String?
+  travelMode    String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  itinerary   Itinerary   @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@map("itinerary_items")
+}
