@@ -62,7 +62,7 @@ export const DestinationDrawer: React.FC = () => {
 
   return (
     <aside
-      className="fixed sm:absolute bottom-3 inset-x-2 sm:inset-x-auto sm:top-[124px] sm:right-5 sm:bottom-6 w-auto sm:w-[390px] lg:w-[430px] max-h-[82vh] sm:max-h-none glass-panel rounded-3xl shadow-2xl flex flex-col overflow-hidden z-20 pointer-events-auto select-none transition-all duration-300 animate-in fade-in slide-in-from-bottom-6 sm:slide-in-from-right-8"
+      className="fixed sm:absolute bottom-3 inset-x-2 sm:inset-x-auto sm:top-[124px] sm:right-5 sm:bottom-6 w-auto sm:w-[390px] lg:w-[430px] max-h-[82vh] sm:max-h-none glass-panel rounded-3xl shadow-2xl flex flex-col overflow-hidden z-40 pointer-events-auto select-none transition-all duration-300 animate-in fade-in slide-in-from-bottom-6 sm:slide-in-from-right-8"
       aria-label="Landmark Details"
     >
       {/* Mobile drag indicator */}

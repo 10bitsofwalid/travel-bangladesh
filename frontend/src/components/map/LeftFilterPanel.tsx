@@ -23,7 +23,7 @@ export const LeftFilterPanel: React.FC = () => {
     return (
       <button
         onClick={toggleLeftPanel}
-        className="absolute top-[100px] sm:top-[124px] left-3 sm:left-5 z-20 glass-panel p-2 sm:p-2.5 rounded-2xl shadow-xl flex items-center gap-1.5 sm:gap-2 text-xs font-bold text-slate-800 hover:scale-105 transition-all cursor-pointer pointer-events-auto border border-white/80"
+        className="absolute top-[100px] sm:top-[124px] left-3 sm:left-5 z-40 glass-panel p-2 sm:p-2.5 rounded-2xl shadow-xl flex items-center gap-1.5 sm:gap-2 text-xs font-bold text-slate-800 hover:scale-105 transition-all cursor-pointer pointer-events-auto border border-white/80"
         title="Open Filter & Trails Panel"
         aria-label="Open Filters"
       >
@@ -36,7 +36,7 @@ export const LeftFilterPanel: React.FC = () => {
 
   return (
     <aside
-      className="absolute top-[100px] sm:top-[120px] left-3 sm:left-5 z-20 w-[calc(100vw-24px)] max-w-[280px] sm:w-[290px] lg:w-[310px] glass-panel rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3.5 sm:space-y-4 pointer-events-auto select-none transition-all duration-300 animate-in fade-in slide-in-from-left-4 max-h-[calc(100vh-260px)] overflow-y-auto border border-white/85"
+      className="absolute top-[100px] sm:top-[120px] left-3 sm:left-5 z-40 w-[calc(100vw-24px)] max-w-[280px] sm:w-[290px] lg:w-[310px] glass-panel rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3.5 sm:space-y-4 pointer-events-auto select-none transition-all duration-300 animate-in fade-in slide-in-from-left-4 max-h-[calc(100vh-260px)] overflow-y-auto border border-white/85"
       aria-label="Map Filters and Trails"
     >
       {/* Header with Collapse Button */}

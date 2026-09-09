@@ -38,7 +38,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <header className="absolute top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 z-30 flex items-center justify-between pointer-events-none transition-all gap-2">
+      <header className="absolute top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 z-50 flex items-center justify-between pointer-events-none transition-all gap-2">
         {/* Dynamic Header Pill: Brand Logo OR Back to Map + Section Breadcrumb */}
         <div className="flex items-center gap-2 sm:gap-3 glass-panel px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-full pointer-events-auto shadow-xl border border-white/80 shrink-0">
           {activeView !== 'explore' ? (

@@ -13,8 +13,10 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.50.1",
+    "@types/leaflet": "^1.9.22",
     "clsx": "^2.1.1",
     "framer-motion": "^11.2.14",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.400.0",
     "mapbox-gl": "^3.5.1",
     "react": "^18.3.1",

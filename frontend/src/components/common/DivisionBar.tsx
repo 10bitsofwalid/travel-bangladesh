@@ -67,7 +67,7 @@ export const DivisionBar: React.FC = () => {
 
   return (
     <nav
-      className="absolute top-[58px] sm:top-[74px] left-1/2 -translate-x-1/2 z-20 pointer-events-none max-w-[calc(100vw-16px)] sm:max-w-2xl lg:max-w-3xl flex items-center justify-center transition-all duration-300 px-1"
+      className="absolute top-[58px] sm:top-[74px] left-1/2 -translate-x-1/2 z-40 pointer-events-none max-w-[calc(100vw-16px)] sm:max-w-2xl lg:max-w-3xl flex items-center justify-center transition-all duration-300 px-1"
       aria-label="Bangladesh Divisions Bar"
     >
       {/* Pristine, complete rounded glass capsule */}
