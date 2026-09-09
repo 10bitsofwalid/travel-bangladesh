@@ -4,7 +4,8 @@ import {
   ViewportFilter,
   UserProfile,
   ItineraryDayItem,
-  VerifiedGuide
+  VerifiedGuide,
+  ContributionItem
 } from '../types';
 import {
   INITIAL_LANDMARKS,
@@ -28,6 +29,13 @@ export interface FilterLayers {
   unesco: boolean;
 }
 
+export interface FlyToTarget {
+  longitude: number;
+  latitude: number;
+  zoom: number;
+  timestamp: number;
+}
+
 interface MapState {
   // Navigation & View Mode
   activeView: 'explore' | 'account' | 'planner';
@@ -35,6 +43,7 @@ interface MapState {
 
   // Viewport & Map state
   viewport: MapViewport;
+  flyToTarget: FlyToTarget | null;
   bounds: [number, number, number, number] | null;
   filter: ViewportFilter;
   filterLayers: FilterLayers;
@@ -43,10 +52,13 @@ interface MapState {
   // Modals & Panels
   selectedDestination: Destination | null;
   isDrawerOpen: boolean;
+  isLeftPanelOpen: boolean;
   isSearchOpen: boolean;
   isSubmitSpotOpen: boolean;
   isVirtualTourOpen: boolean;
   activeDivision: string | null;
+  lightboxImage: { src: string; title: string } | null;
+  toastMessage: string | null;
 
   // User & Account
   userProfile: UserProfile;
@@ -67,16 +79,26 @@ interface MapState {
   setDivisionFilter: (divisionSlug: string | null) => void;
   setSearchQuery: (query: string) => void;
   selectDestination: (destination: Destination | null) => void;
+  openDrawer: () => void;
   closeDrawer: () => void;
+  toggleDrawer: () => void;
+  toggleLeftPanel: () => void;
   toggleSearch: () => void;
   setIsSubmitSpotOpen: (open: boolean) => void;
   setIsVirtualTourOpen: (open: boolean) => void;
+  setLightboxImage: (img: { src: string; title: string } | null) => void;
+  showToast: (message: string) => void;
   flyToLocation: (lng: number, lat: number, zoom?: number) => void;
   takeMeSomewhere: () => void;
   toggleSetting: (settingKey: keyof UserProfile['settings']) => void;
   setActiveItineraryDay: (day: number) => void;
   setSelectedGuideId: (id: string) => void;
   removeItineraryDay: (id: string) => void;
+  addToItinerary: (destination: Destination) => void;
+  addCustomItineraryDay: (title: string, location: string) => void;
+  addContribution: (contribution: ContributionItem) => void;
+  updateUserProfile: (updates: Partial<UserProfile>) => void;
+  updateGamificationProgress: (progress: number) => void;
 }
 
 const DEFAULT_VIEWPORT: MapViewport = {
@@ -92,6 +114,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   setActiveView: (activeView) => set({ activeView }),
 
   viewport: DEFAULT_VIEWPORT,
+  flyToTarget: null,
   bounds: null,
   filter: {
     type: 'ALL',
@@ -105,14 +128,17 @@ export const useMapStore = create<MapState>((set, get) => ({
     culture: true,
     unesco: true,
   },
-  selectedTrail: 'mughal', // default to Mughal trail as shown in design
+  selectedTrail: 'mughal', // default to Mughal trail
 
-  selectedDestination: INITIAL_LANDMARKS[0], // Ahsan Manzil by default as shown in Image 2
+  selectedDestination: INITIAL_LANDMARKS[0], // Ahsan Manzil by default
   isDrawerOpen: true,
+  isLeftPanelOpen: true,
   isSearchOpen: false,
   isSubmitSpotOpen: false,
   isVirtualTourOpen: false,
   activeDivision: null,
+  lightboxImage: null,
+  toastMessage: null,
 
   userProfile: MOCK_USER_PROFILE,
   itineraryDays: MOCK_ITINERARY_DAYS,
@@ -138,10 +164,22 @@ export const useMapStore = create<MapState>((set, get) => ({
       },
     })),
 
-  setSelectedTrail: (selectedTrail) =>
-    set((state) => ({
-      selectedTrail: state.selectedTrail === selectedTrail ? null : selectedTrail,
-    })),
+  setSelectedTrail: (selectedTrail) => {
+    const isClearing = get().selectedTrail === selectedTrail;
+    const newTrail = isClearing ? null : selectedTrail;
+    set({ selectedTrail: newTrail });
+
+    // Fly to the region corresponding to the trail
+    if (newTrail === 'mughal') {
+      get().flyToLocation(90.4060, 23.7086, 8.5);
+    } else if (newTrail === 'buddhist') {
+      get().flyToLocation(88.9771, 25.0315, 8.5);
+    } else if (newTrail === 'sylhet') {
+      get().flyToLocation(91.8687, 24.8949, 8.8);
+    } else if (newTrail === 'sundarbans') {
+      get().flyToLocation(89.5403, 22.1456, 8.8);
+    }
+  },
 
   setCategoryFilter: (categorySlug) =>
     set((state) => ({
@@ -159,16 +197,20 @@ export const useMapStore = create<MapState>((set, get) => ({
       filter: { ...state.filter, searchQuery },
     })),
 
-  selectDestination: (destination) =>
+  selectDestination: (destination) => {
     set({
       selectedDestination: destination,
       isDrawerOpen: destination !== null,
-    }),
+    });
+    if (destination) {
+      get().flyToLocation(destination.longitude, destination.latitude, 9.5);
+    }
+  },
 
-  closeDrawer: () =>
-    set({
-      isDrawerOpen: false,
-    }),
+  openDrawer: () => set({ isDrawerOpen: true }),
+  closeDrawer: () => set({ isDrawerOpen: false }),
+  toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
+  toggleLeftPanel: () => set((state) => ({ isLeftPanelOpen: !state.isLeftPanelOpen })),
 
   toggleSearch: () =>
     set((state) => ({ isSearchOpen: !state.isSearchOpen })),
@@ -177,7 +219,16 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   setIsVirtualTourOpen: (isVirtualTourOpen) => set({ isVirtualTourOpen }),
 
-  flyToLocation: (longitude, latitude, zoom = 10) =>
+  setLightboxImage: (lightboxImage) => set({ lightboxImage }),
+
+  showToast: (message) => {
+    set({ toastMessage: message });
+    setTimeout(() => {
+      set((state) => (state.toastMessage === message ? { toastMessage: null } : {}));
+    }, 3200);
+  },
+
+  flyToLocation: (longitude, latitude, zoom = 9.5) => {
     set((state) => ({
       viewport: {
         ...state.viewport,
@@ -185,7 +236,14 @@ export const useMapStore = create<MapState>((set, get) => ({
         latitude,
         zoom,
       },
-    })),
+      flyToTarget: {
+        longitude,
+        latitude,
+        zoom,
+        timestamp: Date.now(),
+      },
+    }));
+  },
 
   takeMeSomewhere: () => {
     const list = INITIAL_LANDMARKS;
@@ -203,7 +261,14 @@ export const useMapStore = create<MapState>((set, get) => ({
         latitude: randomItem.latitude,
         zoom: 9.5,
       },
+      flyToTarget: {
+        longitude: randomItem.longitude,
+        latitude: randomItem.latitude,
+        zoom: 9.5,
+        timestamp: Date.now(),
+      },
     }));
+    get().showToast(`Discovered: ${randomItem.name} (${randomItem.district?.name || 'Bangladesh'})`);
   },
 
   toggleSetting: (settingKey) =>
@@ -222,7 +287,100 @@ export const useMapStore = create<MapState>((set, get) => ({
   setSelectedGuideId: (selectedGuideId) => set({ selectedGuideId }),
 
   removeItineraryDay: (id) =>
+    set((state) => {
+      const remaining = state.itineraryDays.filter((item) => item.id !== id);
+      // Renumber days nicely
+      const renumbered = remaining.map((item, index) => ({
+        ...item,
+        dayNumber: index + 1,
+        title: item.title.replace(/Day \d+:/, `Day ${index + 1}:`),
+      }));
+      return {
+        itineraryDays: renumbered,
+        activeItineraryDay: Math.min(state.activeItineraryDay, renumbered.length || 1),
+      };
+    }),
+
+  addToItinerary: (destination) => {
+    const { itineraryDays } = get();
+    const existing = itineraryDays.find(
+      (item) => item.destinationId === destination.id || item.location.includes(destination.name)
+    );
+
+    if (existing) {
+      get().showToast(`"${destination.name}" is already Day ${existing.dayNumber} in your planner!`);
+      return;
+    }
+
+    const nextDayNumber = itineraryDays.length + 1;
+    const newDay: ItineraryDayItem = {
+      id: `itinerary-day-${Date.now()}`,
+      dayNumber: nextDayNumber,
+      title: `Day ${nextDayNumber}: ${destination.division?.name || 'Bangladesh'} - ${destination.name}`,
+      location: `${destination.name}, ${destination.district?.name || 'Bangladesh'}`,
+      destinationId: destination.id,
+      travelTime: '3 h 15 min',
+      description: destination.summary,
+    };
+
+    set({
+      itineraryDays: [...itineraryDays, newDay],
+      activeItineraryDay: nextDayNumber,
+    });
+    get().showToast(`Added ${destination.name} to Day ${nextDayNumber} in Planner!`);
+  },
+
+  addCustomItineraryDay: (title, location) => {
+    const { itineraryDays } = get();
+    const nextDayNumber = itineraryDays.length + 1;
+    const newDay: ItineraryDayItem = {
+      id: `itinerary-day-${Date.now()}`,
+      dayNumber: nextDayNumber,
+      title: `Day ${nextDayNumber}: ${title}`,
+      location,
+      travelTime: '2 h 30 min',
+      description: 'Custom travel milestone',
+    };
+
+    set({
+      itineraryDays: [...itineraryDays, newDay],
+      activeItineraryDay: nextDayNumber,
+    });
+    get().showToast(`Created Day ${nextDayNumber} in Planner!`);
+  },
+
+  addContribution: (contribution) => {
     set((state) => ({
-      itineraryDays: state.itineraryDays.filter((item) => item.id !== id),
+      userProfile: {
+        ...state.userProfile,
+        contributorLevel: state.userProfile.contributorLevel + 1,
+        gamification: {
+          ...state.userProfile.gamification,
+          historicalValidations: state.userProfile.gamification.historicalValidations + 1,
+          landmarkPhotoApprovals: state.userProfile.gamification.landmarkPhotoApprovals + 1,
+          levelProgress: Math.min(100, state.userProfile.gamification.levelProgress + 10),
+        },
+      },
+    }));
+    get().showToast(`Contribution submitted: "${contribution.title}" (+${contribution.points} pts)`);
+  },
+
+  updateUserProfile: (updates) =>
+    set((state) => ({
+      userProfile: {
+        ...state.userProfile,
+        ...updates,
+      },
+    })),
+
+  updateGamificationProgress: (progress) =>
+    set((state) => ({
+      userProfile: {
+        ...state.userProfile,
+        gamification: {
+          ...state.userProfile.gamification,
+          levelProgress: progress,
+        },
+      },
     })),
 }));

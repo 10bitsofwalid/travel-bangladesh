@@ -6,7 +6,9 @@ import {
   Star,
   BedDouble,
   ArrowRight,
-  MapPin
+  MapPin,
+  Plus,
+  Calendar
 } from 'lucide-react';
 import { useMapStore } from '../../store/useMapStore';
 
@@ -16,25 +18,115 @@ export const PlannerView: React.FC = () => {
     activeItineraryDay,
     setActiveItineraryDay,
     removeItineraryDay,
+    addCustomItineraryDay,
     guides,
     selectedGuideId,
     setSelectedGuideId,
-    setActiveView
+    setActiveView,
+    showToast,
+    flyToLocation
   } = useMapStore();
 
   const [isItinerarySelected, setIsItinerarySelected] = useState(false);
+  const [isAddingDay, setIsAddingDay] = useState(false);
+  const [newDayTitle, setNewDayTitle] = useState('');
+  const [newDayLocation, setNewDayLocation] = useState('');
+
+  const selectedGuide = guides.find((g) => g.id === selectedGuideId) || guides[0];
+
+  // Dynamic cost calculation based on days count
+  const daysCount = itineraryDays.length;
+  const guideFee = daysCount * 30; // $30/day guide fee
+  const logisticsFee = 130; // Standard heritage logistics & entry permit package
+  const totalCost = daysCount === 7 ? 340 : guideFee + logisticsFee;
+
+  const handleConfirmItinerary = () => {
+    setIsItinerarySelected(!isItinerarySelected);
+    if (!isItinerarySelected) {
+      showToast(`Itinerary confirmed with Guide ${selectedGuide.name}! Total: $${totalCost}`);
+    }
+  };
+
+  const handleAddDaySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDayTitle.trim()) return;
+    addCustomItineraryDay(newDayTitle.trim(), newDayLocation.trim() || 'Bangladesh');
+    setNewDayTitle('');
+    setNewDayLocation('');
+    setIsAddingDay(false);
+  };
+
+  const handleSelectDay = (item: typeof itineraryDays[0]) => {
+    setActiveItineraryDay(item.dayNumber);
+    // If it has a known landmark, fly to Dhaka or its coordinate
+    if (item.location.toLowerCase().includes('sylhet')) {
+      flyToLocation(91.8687, 24.8949, 9.0);
+    } else if (item.location.toLowerCase().includes('sundarbans') || item.location.toLowerCase().includes('khulna')) {
+      flyToLocation(89.5403, 22.1456, 8.8);
+    } else if (item.location.toLowerCase().includes('bagerhat')) {
+      flyToLocation(89.7925, 22.6575, 9.5);
+    } else {
+      flyToLocation(90.4060, 23.7086, 9.5);
+    }
+  };
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-20 flex justify-between p-5 pt-20 select-none">
+    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col lg:flex-row justify-between p-3 sm:p-5 pt-16 sm:pt-20 pb-8 select-none overflow-y-auto lg:overflow-hidden gap-4 sm:gap-5 max-w-7xl mx-auto">
       
       {/* Left Panel: BUILD ITINERARY: 7-DAY EXPLORATION */}
-      <aside className="w-[340px] md:w-[380px] glass-panel rounded-3xl p-5 shadow-2xl flex flex-col pointer-events-auto h-[calc(100vh-100px)]">
-        <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-4">
-          BUILD ITINERARY: 7-DAY EXPLORATION
-        </h3>
+      <aside className="w-full lg:w-[360px] xl:w-[400px] lg:flex-1 glass-panel rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col pointer-events-auto h-auto lg:h-[calc(100vh-100px)] border border-white/80 shrink-0">
+        <div className="flex items-center justify-between mb-3.5">
+          <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+            BUILD ITINERARY: 7-DAY EXPLORATION
+          </h3>
+          <button
+            onClick={() => setIsAddingDay(!isAddingDay)}
+            className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 flex items-center gap-1 cursor-pointer"
+          >
+            <Plus className="w-3 h-3" />
+            <span>Add Day</span>
+          </button>
+        </div>
+
+        {/* Custom Add Day Form */}
+        {isAddingDay && (
+          <form onSubmit={handleAddDaySubmit} className="mb-3 p-3 bg-white/90 rounded-2xl border border-emerald-300 shadow-sm space-y-2 animate-in fade-in">
+            <h5 className="text-[11px] font-extrabold text-slate-800 uppercase">New Day Milestone</h5>
+            <input
+              type="text"
+              placeholder="Title (e.g. Day 8: Srimangal Rainforest)"
+              value={newDayTitle}
+              onChange={(e) => setNewDayTitle(e.target.value)}
+              className="w-full text-xs p-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Location (e.g. Lawachara National Park)"
+              value={newDayLocation}
+              onChange={(e) => setNewDayLocation(e.target.value)}
+              className="w-full text-xs p-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+            />
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsAddingDay(false)}
+                className="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-3 py-1 text-xs font-bold text-white bg-slate-900 rounded-lg hover:bg-emerald-600 cursor-pointer"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Scrollable Timeline */}
-        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[360px] lg:max-h-none">
           {itineraryDays.map((item, index) => {
             const isActive = activeItineraryDay === item.dayNumber;
 
@@ -49,7 +141,7 @@ export const PlannerView: React.FC = () => {
                 <div
                   className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-2 transition-all ${
                     isActive
-                      ? 'bg-emerald-400 text-white ring-4 ring-emerald-300/40'
+                      ? 'bg-emerald-500 text-white ring-4 ring-emerald-300/40'
                       : 'bg-white border-2 border-slate-300 text-slate-400'
                   }`}
                 >
@@ -58,10 +150,10 @@ export const PlannerView: React.FC = () => {
 
                 {/* Card */}
                 <div
-                  onClick={() => setActiveItineraryDay(item.dayNumber)}
-                  className={`flex-1 p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                  onClick={() => handleSelectDay(item)}
+                  className={`flex-1 p-3 sm:p-3.5 rounded-2xl cursor-pointer transition-all border ${
                     isActive
-                      ? 'bg-emerald-50/90 border-emerald-400/80 shadow-md ring-2 ring-emerald-400/30'
+                      ? 'bg-emerald-50/95 border-emerald-400/80 shadow-md ring-2 ring-emerald-400/30'
                       : 'bg-white/70 hover:bg-white border-slate-200/80 shadow-sm'
                   }`}
                 >
@@ -78,7 +170,7 @@ export const PlannerView: React.FC = () => {
                         e.stopPropagation();
                         removeItineraryDay(item.id);
                       }}
-                      className="text-slate-400 hover:text-rose-500 transition-colors shrink-0"
+                      className="text-slate-400 hover:text-rose-500 transition-colors shrink-0 p-0.5 cursor-pointer"
                       title="Remove Day"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -86,8 +178,8 @@ export const PlannerView: React.FC = () => {
                   </div>
                   {item.location && (
                     <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-400" />
-                      {item.location}
+                      <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span>{item.location}</span>
                     </p>
                   )}
                 </div>
@@ -98,16 +190,19 @@ export const PlannerView: React.FC = () => {
       </aside>
 
       {/* Right Panel: BOOK GUIDE & LOGISTICS */}
-      <aside className="w-[520px] lg:w-[580px] glass-panel rounded-3xl p-5 shadow-2xl flex flex-col pointer-events-auto h-[calc(100vh-100px)] overflow-y-auto space-y-4">
+      <aside className="w-full lg:flex-[1.4] xl:flex-[1.6] lg:max-w-[660px] glass-panel rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col pointer-events-auto h-auto lg:h-[calc(100vh-100px)] overflow-y-auto space-y-4 border border-white/80">
         
         {/* Header with Close ✕ */}
         <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
-          <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-            BOOK GUIDE & LOGISTICS
-          </h3>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-emerald-600" />
+            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+              BOOK GUIDE & LOGISTICS
+            </h3>
+          </div>
           <button
             onClick={() => setActiveView('explore')}
-            className="w-7 h-7 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-700 flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
             title="Close Planner"
           >
             <X className="w-4 h-4" />
@@ -121,16 +216,17 @@ export const PlannerView: React.FC = () => {
           </h4>
           
           {/* Horizontal scroll / grid of guide cards */}
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
             {guides.map((guide) => {
               const isSelected = selectedGuideId === guide.id;
 
               return (
                 <div
                   key={guide.id}
-                  className={`p-3 rounded-2xl border transition-all flex flex-col justify-between ${
+                  onClick={() => setSelectedGuideId(guide.id)}
+                  className={`p-3 rounded-2xl border transition-all flex flex-col justify-between cursor-pointer ${
                     isSelected
-                      ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-400/20'
+                      ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-400/30'
                       : 'bg-white/70 hover:bg-white border-slate-200/80'
                   }`}
                 >
@@ -172,8 +268,11 @@ export const PlannerView: React.FC = () => {
 
                   {/* Select Guide Button */}
                   <button
-                    onClick={() => setSelectedGuideId(guide.id)}
-                    className={`mt-3 py-1.5 px-3 rounded-full text-[10px] font-bold tracking-wide uppercase transition-all ${
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedGuideId(guide.id);
+                    }}
+                    className={`mt-3 py-1.5 px-3 rounded-full text-[10px] font-bold tracking-wide uppercase transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-slate-900 text-white shadow-sm'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -188,8 +287,7 @@ export const PlannerView: React.FC = () => {
         </div>
 
         {/* Section 2 & 3: ESTIMATED TRAVEL TIMES + ACCOMMODATION OPTIONS nearby */}
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           {/* Estimated Travel Times */}
           <div className="bg-white/70 p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
             <div>
@@ -254,12 +352,10 @@ export const PlannerView: React.FC = () => {
               </div>
             </div>
           </div>
-
         </div>
 
         {/* Section 4: Bottom Real-Time Total & Cart Summary */}
-        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/70">
-          
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/70">
           {/* Real-time total */}
           <div className="bg-white/70 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
             <div>
@@ -267,15 +363,15 @@ export const PlannerView: React.FC = () => {
                 REAL-TIME TOTAL
               </span>
               <div className="text-xs font-bold text-slate-800 mt-1">
-                Mughal History
+                Mughal History ({daysCount} Days Planned)
               </div>
             </div>
 
             <button
-              onClick={() => setIsItinerarySelected(!isItinerarySelected)}
-              className={`w-full mt-3 py-2 px-3 rounded-full text-xs font-bold uppercase transition-all shadow-sm ${
+              onClick={handleConfirmItinerary}
+              className={`w-full mt-3 py-2 px-3 rounded-full text-xs font-bold uppercase transition-all shadow-sm cursor-pointer ${
                 isItinerarySelected
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-emerald-600 text-white shadow-emerald-500/30'
                   : 'bg-white hover:bg-slate-50 text-slate-800 border border-slate-300'
               }`}
             >
@@ -303,10 +399,9 @@ export const PlannerView: React.FC = () => {
 
             <div className="flex justify-between font-mono font-extrabold text-slate-900 pt-2 border-t border-slate-200/80">
               <span>Total Total:</span>
-              <span className="text-emerald-700 font-black">$340</span>
+              <span className="text-emerald-700 font-black">${totalCost}</span>
             </div>
           </div>
-
         </div>
 
       </aside>

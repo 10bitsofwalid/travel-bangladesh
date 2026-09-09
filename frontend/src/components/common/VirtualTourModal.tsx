@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Volume2, VolumeX, RotateCw, ZoomIn, ZoomOut, Compass, Info } from 'lucide-react';
 import { useMapStore } from '../../store/useMapStore';
 
@@ -10,6 +10,74 @@ export const VirtualTourModal: React.FC = () => {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isMuted, setIsMuted] = useState(true);
   const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
+
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+
+  // Synthesized natural breeze ambient soundscape using Web Audio API
+  useEffect(() => {
+    if (!isVirtualTourOpen) {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
+      return;
+    }
+
+    if (!isMuted) {
+      try {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const ctx = new AudioCtx();
+        audioCtxRef.current = ctx;
+
+        // Buffer for gentle pink/brown noise
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.04;
+          b6 = white * 0.115926;
+        }
+
+        const whiteNoise = ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 350;
+
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 0.12;
+        gainNodeRef.current = gainNode;
+
+        whiteNoise.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        whiteNoise.start();
+      } catch {
+        // Fallback gracefully if Web Audio is blocked
+      }
+    } else if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
+
+    return () => {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
+    };
+  }, [isVirtualTourOpen, isMuted]);
 
   if (!isVirtualTourOpen) return null;
 
@@ -136,7 +204,7 @@ export const VirtualTourModal: React.FC = () => {
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     const delta = e.clientX - startX;
-    setRotation((prev) => (prev + delta * 0.25) % 360);
+    setRotation((prev) => (prev + delta * 0.3) % 360);
     setStartX(e.clientX);
   };
 
@@ -144,32 +212,47 @@ export const VirtualTourModal: React.FC = () => {
     setIsDragging(false);
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      setStartX(e.touches[0].clientX);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    const delta = e.touches[0].clientX - startX;
+    setRotation((prev) => (prev + delta * 0.3) % 360);
+    setStartX(e.touches[0].clientX);
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xl animate-in fade-in select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in select-none"
       onMouseUp={handleMouseUp}
+      onTouchEnd={handleMouseUp}
     >
-      <div className="relative w-full max-w-5xl h-[80vh] rounded-3xl overflow-hidden glass-panel border border-white/40 shadow-2xl flex flex-col">
+      <div className="relative w-full max-w-5xl h-[88vh] sm:h-[82vh] rounded-3xl overflow-hidden glass-panel border border-white/40 shadow-2xl flex flex-col">
         {/* Top Floating Control Bar */}
-        <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between pointer-events-none">
-          <div className="glass-panel px-4 py-2 rounded-full pointer-events-auto flex items-center gap-2 shadow-lg">
-            <Compass className="w-4 h-4 text-emerald-600 animate-spin-slow" />
-            <span className="text-xs font-extrabold text-slate-800 tracking-wider uppercase">
-              360° VIRTUAL PANORAMA: {selectedDestination?.name || 'AHSAN MANZIL'}
+        <div className="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 z-30 flex items-center justify-between pointer-events-none gap-2">
+          <div className="glass-panel px-3 sm:px-4 py-1.5 sm:py-2 rounded-full pointer-events-auto flex items-center gap-1.5 sm:gap-2 shadow-lg border border-white/80 shrink-0 min-w-0">
+            <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 animate-spin-slow shrink-0" />
+            <span className="text-[11px] sm:text-xs font-extrabold text-slate-800 tracking-wider uppercase truncate max-w-[170px] sm:max-w-none">
+              360° PANORAMA: {selectedDestination?.name || 'AHSAN MANZIL'}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 pointer-events-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
             <button
               onClick={() => setIsMuted(!isMuted)}
-              className="w-9 h-9 rounded-full glass-panel flex items-center justify-center text-slate-700 hover:text-emerald-600 transition-colors shadow-md"
-              title={isMuted ? 'Unmute Ambient Sound' : 'Mute'}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full glass-panel flex items-center justify-center text-slate-700 hover:text-emerald-600 transition-colors shadow-md border border-white/80 cursor-pointer"
+              title={isMuted ? 'Unmute Ambient Breeze Sound' : 'Mute Sound'}
             >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-emerald-600" />}
+              {isMuted ? <VolumeX className="w-4 h-4 text-slate-500" /> : <Volume2 className="w-4 h-4 text-emerald-600 animate-pulse" />}
             </button>
             <button
               onClick={() => setIsVirtualTourOpen(false)}
-              className="w-9 h-9 rounded-full glass-panel flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors shadow-md"
+              className="w-9 h-9 rounded-full glass-panel flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors shadow-md border border-white/80 cursor-pointer"
               title="Close Virtual Tour"
             >
               <X className="w-4 h-4" />
@@ -182,30 +265,43 @@ export const VirtualTourModal: React.FC = () => {
           className="relative flex-1 w-full h-full cursor-grab active:cursor-grabbing overflow-hidden bg-slate-950 flex items-center justify-center"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
         >
-          {/* Panoramic wide cylinder image simulating 360 */}
+          {/* Panoramic wide cylinder image simulating continuous 360 wrapping */}
           <div
             className="absolute inset-0 flex items-center justify-center transition-transform duration-75 ease-out pointer-events-none"
             style={{
               transform: `scale(${zoomLevel})`,
             }}
           >
-            <img
-              src={panoramaImage}
-              alt={`${selectedDestination?.name || 'Landmark'} 360 Panorama`}
-              className="w-[260%] max-w-none h-full object-cover select-none"
+            {/* Render seamless dual panorama to simulate full infinite rotation */}
+            <div
+              className="flex w-[320%] max-w-none h-full select-none"
               style={{
-                transform: `translateX(${rotation * 4}px)`,
+                transform: `translateX(${((rotation % 100) * 4.5)}px)`,
               }}
-              draggable={false}
-            />
+            >
+              <img
+                src={panoramaImage}
+                alt={`${selectedDestination?.name || 'Landmark'} 360 Panorama Left`}
+                className="w-1/2 h-full object-cover select-none"
+                draggable={false}
+              />
+              <img
+                src={panoramaImage}
+                alt={`${selectedDestination?.name || 'Landmark'} 360 Panorama Right`}
+                className="w-1/2 h-full object-cover select-none"
+                draggable={false}
+              />
+            </div>
           </div>
 
           {/* Interactive Hotspots */}
           <div className="absolute inset-0 pointer-events-none">
             {hotspots.map((spot) => {
-              const adjustedPos = (spot.positionPercent + rotation * 0.15) % 100;
-              const isVisible = adjustedPos > 10 && adjustedPos < 90;
+              const adjustedPos = ((spot.positionPercent + (rotation * 0.2)) % 100 + 100) % 100;
+              const isVisible = adjustedPos > 8 && adjustedPos < 92;
 
               if (!isVisible) return null;
 
@@ -217,7 +313,8 @@ export const VirtualTourModal: React.FC = () => {
                 >
                   <button
                     onClick={() => setActiveHotspot(activeHotspot === spot.id ? null : spot.id)}
-                    className="group relative flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/90 text-white border-2 border-white shadow-xl hover:scale-125 transition-transform"
+                    className="group relative flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500 text-white border-2 border-white shadow-xl hover:scale-125 transition-transform cursor-pointer"
+                    title={`Explore ${spot.title}`}
                   >
                     <Info className="w-4 h-4" />
                     <span className="absolute -inset-1 rounded-full bg-emerald-400 animate-ping opacity-50 pointer-events-none" />
@@ -225,7 +322,7 @@ export const VirtualTourModal: React.FC = () => {
 
                   {/* Hotspot Popup */}
                   {activeHotspot === spot.id && (
-                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-64 glass-panel p-3.5 rounded-2xl shadow-2xl border border-white/80 text-left z-20 animate-in fade-in zoom-in-95">
+                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-64 glass-panel p-3.5 rounded-2xl shadow-2xl border border-white/85 text-left z-20 animate-in fade-in zoom-in-95">
                       <h4 className="text-xs font-bold text-slate-900">{spot.title}</h4>
                       <p className="text-[11px] text-slate-600 mt-1 leading-snug">{spot.desc}</p>
                     </div>
@@ -236,41 +333,42 @@ export const VirtualTourModal: React.FC = () => {
           </div>
 
           {/* Drag instruction overlay hint */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel px-4 py-1.5 rounded-full pointer-events-none text-[11px] font-semibold text-slate-700 shadow-md">
-            Click & drag horizontally to look around 360° · Click green nodes to explore
+          <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 glass-panel px-3 sm:px-4 py-1 sm:py-1.5 rounded-full pointer-events-none text-[10px] sm:text-[11px] font-semibold text-slate-700 shadow-md border border-white/80 whitespace-nowrap max-w-[calc(100vw-32px)] truncate text-center">
+            <span className="hidden sm:inline">Click & drag horizontally to look around 360° · Click green nodes to inspect features</span>
+            <span className="sm:hidden">Drag horizontally to look around 360°</span>
           </div>
         </div>
 
         {/* Bottom Zoom & Orbit Controls */}
-        <div className="px-6 py-3 bg-white/70 border-t border-white/60 flex items-center justify-between text-xs text-slate-700">
-          <div className="flex items-center gap-2">
+        <div className="px-3 sm:px-6 py-2.5 sm:py-3 bg-white/75 border-t border-white/60 flex items-center justify-between text-xs text-slate-700">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => setZoomLevel((prev) => Math.min(prev + 0.2, 1.8))}
-              className="p-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 shadow-sm"
+              className="p-1.5 sm:p-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 shadow-sm cursor-pointer"
               title="Zoom in"
             >
-              <ZoomIn className="w-4 h-4" />
+              <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => setZoomLevel((prev) => Math.max(prev - 0.2, 0.8))}
-              className="p-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 shadow-sm"
+              className="p-1.5 sm:p-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 shadow-sm cursor-pointer"
               title="Zoom out"
             >
-              <ZoomOut className="w-4 h-4" />
+              <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => {
                 setRotation(0);
                 setZoomLevel(1);
               }}
-              className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 shadow-sm font-semibold flex items-center gap-1.5"
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 shadow-sm font-semibold flex items-center gap-1 sm:gap-1.5 cursor-pointer text-xs"
             >
-              <RotateCw className="w-3.5 h-3.5" />
-              <span>Reset View</span>
+              <RotateCw className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+              <span>Reset</span>
             </button>
           </div>
 
-          <div className="font-mono text-[11px] text-slate-500 font-semibold">
+          <div className="font-mono text-[10px] sm:text-[11px] text-slate-500 font-semibold hidden md:block">
             PANORAMIC SPHERICAL VIEW · OLD DHAKA HERITAGE ARCHIVE
           </div>
         </div>

@@ -15,7 +15,10 @@ import {
   MapPin,
   Plane,
   Train,
-  Car
+  Car,
+  Ship,
+  Eye,
+  ShieldCheck
 } from 'lucide-react';
 import { useMapStore } from '../../store/useMapStore';
 
@@ -26,6 +29,10 @@ export const DestinationDrawer: React.FC = () => {
     closeDrawer,
     setActiveView,
     setIsVirtualTourOpen,
+    addToItinerary,
+    setSelectedGuideId,
+    guides,
+    setLightboxImage,
   } = useMapStore();
 
   const [activeTab, setActiveTab] = useState<'bestTime' | 'entry' | 'routes' | 'documents' | 'timeline'>('bestTime');
@@ -34,11 +41,19 @@ export const DestinationDrawer: React.FC = () => {
   if (!isDrawerOpen || !selectedDestination) return null;
 
   const handleAddToItinerary = () => {
+    addToItinerary(selectedDestination);
     setIsAddedToItinerary(true);
     setTimeout(() => setIsAddedToItinerary(false), 2500);
   };
 
   const handleBookGuide = () => {
+    // Select guide specializing in this region if available
+    const matchedGuide = guides.find((g) =>
+      g.specialization.toLowerCase().includes(selectedDestination.division?.name.toLowerCase() || '')
+    );
+    if (matchedGuide) {
+      setSelectedGuideId(matchedGuide.id);
+    }
     setActiveView('planner');
   };
 
@@ -47,20 +62,24 @@ export const DestinationDrawer: React.FC = () => {
 
   return (
     <aside
-      className="absolute top-24 right-5 bottom-6 w-[390px] lg:w-[430px] glass-panel rounded-3xl shadow-2xl flex flex-col overflow-hidden z-20 pointer-events-auto select-none transition-all duration-300 animate-in fade-in slide-in-from-right-8"
+      className="fixed sm:absolute bottom-3 inset-x-2 sm:inset-x-auto sm:top-[124px] sm:right-5 sm:bottom-6 w-auto sm:w-[390px] lg:w-[430px] max-h-[82vh] sm:max-h-none glass-panel rounded-3xl shadow-2xl flex flex-col overflow-hidden z-20 pointer-events-auto select-none transition-all duration-300 animate-in fade-in slide-in-from-bottom-6 sm:slide-in-from-right-8"
       aria-label="Landmark Details"
     >
+      {/* Mobile drag indicator */}
+      <div className="w-10 h-1 rounded-full bg-slate-400/40 mx-auto mt-2 sm:hidden shrink-0" />
+
       {/* Scrollable Container */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-4 space-y-3 sm:space-y-4">
         {/* Hero Card Image with Title Overlay */}
-        <div className="relative h-56 rounded-2xl overflow-hidden shadow-md group">
+        <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden shadow-md group shrink-0">
           <img
             src={selectedDestination.coverImage}
             alt={selectedDestination.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 cursor-pointer"
+            onClick={() => setLightboxImage({ src: selectedDestination.coverImage, title: selectedDestination.name })}
           />
           {/* Subtle gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
 
           {/* UNESCO / Conservation Badges */}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
@@ -85,7 +104,7 @@ export const DestinationDrawer: React.FC = () => {
           {/* Close button */}
           <button
             onClick={closeDrawer}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-all shadow-md z-10"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-all shadow-md z-10 cursor-pointer"
             aria-label="Close Drawer"
           >
             <X className="w-4 h-4" />
@@ -114,7 +133,7 @@ export const DestinationDrawer: React.FC = () => {
 
         {/* Historical Context Tag Bar */}
         {heritage && (
-          <div className="grid grid-cols-2 gap-2 p-2.5 bg-white/70 rounded-2xl border border-slate-200/80 text-[11px]">
+          <div className="grid grid-cols-2 gap-2 p-2.5 bg-white/75 rounded-2xl border border-slate-200/80 text-[11px]">
             {heritage.periodEra && (
               <div>
                 <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block">
@@ -144,7 +163,7 @@ export const DestinationDrawer: React.FC = () => {
             <Scroll className="w-3 h-3 text-amber-600" />
             HISTORICAL CHRONICLES
           </h4>
-          <p className="text-xs text-slate-600 leading-relaxed font-normal bg-white/40 p-2.5 rounded-xl border border-slate-200/60">
+          <p className="text-xs text-slate-600 leading-relaxed font-normal bg-white/50 p-3 rounded-xl border border-slate-200/60">
             {selectedDestination.chronicles || selectedDestination.summary}
           </p>
         </div>
@@ -155,17 +174,17 @@ export const DestinationDrawer: React.FC = () => {
             <Sparkles className="w-3 h-3 text-emerald-600" />
             {selectedDestination.loreTitle || "THE PALACE'S LORE"}
           </h4>
-          <p className="text-xs text-slate-600 leading-relaxed font-normal bg-white/40 p-2.5 rounded-xl border border-slate-200/60">
+          <p className="text-xs text-slate-600 leading-relaxed font-normal bg-white/50 p-3 rounded-xl border border-slate-200/60">
             {selectedDestination.lore || selectedDestination.description}
           </p>
         </div>
 
         {/* Action & Media Row: 360° Tour, Historical Timeline Chips, Local Reviews */}
         <div className="grid grid-cols-3 gap-2 items-center pt-1">
-          {/* 360° Virtual Tour Pill Button */}
+          {/* 360° Virtual Tour Button */}
           <button
             onClick={() => setIsVirtualTourOpen(true)}
-            className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white/60 hover:bg-white border border-slate-200/80 shadow-sm transition-all group cursor-pointer"
+            className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white/70 hover:bg-white border border-slate-200/80 shadow-sm transition-all group cursor-pointer"
           >
             <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600 transition-all shadow-sm">
               <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
@@ -175,10 +194,10 @@ export const DestinationDrawer: React.FC = () => {
             </span>
           </button>
 
-          {/* Historical Timeline Mini Button / Preview */}
+          {/* Historical Timeline Mini Button */}
           <button
             onClick={() => setActiveTab('timeline')}
-            className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white/60 hover:bg-white border border-slate-200/80 shadow-sm transition-all cursor-pointer group"
+            className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white/70 hover:bg-white border border-slate-200/80 shadow-sm transition-all cursor-pointer group"
           >
             <span className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
               HISTORICAL TIMELINE
@@ -197,7 +216,7 @@ export const DestinationDrawer: React.FC = () => {
           </button>
 
           {/* Local Reviews ⭐⭐⭐⭐⭐ */}
-          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white/60 border border-slate-200/80 shadow-sm">
+          <div className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white/70 border border-slate-200/80 shadow-sm">
             <span className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
               LOCAL REVIEWS
             </span>
@@ -217,7 +236,7 @@ export const DestinationDrawer: React.FC = () => {
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-200/80 pb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
             <button
               onClick={() => setActiveTab('bestTime')}
-              className={`pb-1 whitespace-nowrap transition-colors ${
+              className={`pb-1 whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'bestTime'
                   ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
                   : 'hover:text-slate-900'
@@ -227,7 +246,7 @@ export const DestinationDrawer: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('entry')}
-              className={`pb-1 whitespace-nowrap transition-colors ${
+              className={`pb-1 whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'entry'
                   ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
                   : 'hover:text-slate-900'
@@ -237,7 +256,7 @@ export const DestinationDrawer: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('routes')}
-              className={`pb-1 whitespace-nowrap transition-colors ${
+              className={`pb-1 whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'routes'
                   ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
                   : 'hover:text-slate-900'
@@ -248,7 +267,7 @@ export const DestinationDrawer: React.FC = () => {
             {hasDocuments && (
               <button
                 onClick={() => setActiveTab('documents')}
-                className={`pb-1 whitespace-nowrap transition-colors flex items-center gap-1 ${
+                className={`pb-1 whitespace-nowrap transition-colors flex items-center gap-1 cursor-pointer ${
                   activeTab === 'documents'
                     ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
                     : 'hover:text-slate-900 text-amber-700'
@@ -261,7 +280,7 @@ export const DestinationDrawer: React.FC = () => {
             {selectedDestination.timeline.length > 0 && (
               <button
                 onClick={() => setActiveTab('timeline')}
-                className={`pb-1 whitespace-nowrap transition-colors flex items-center gap-1 ${
+                className={`pb-1 whitespace-nowrap transition-colors flex items-center gap-1 cursor-pointer ${
                   activeTab === 'timeline'
                     ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
                     : 'hover:text-slate-900'
@@ -274,10 +293,10 @@ export const DestinationDrawer: React.FC = () => {
           </div>
 
           {/* Tab Content Box */}
-          <div className="p-3 bg-white/60 rounded-2xl border border-slate-200/80 mt-2 text-xs text-slate-700 space-y-2">
+          <div className="p-3 bg-white/70 rounded-2xl border border-slate-200/80 mt-2 text-xs text-slate-700 space-y-2">
             {/* 1. Best Time Tab */}
             {activeTab === 'bestTime' && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="flex items-start gap-2">
                   <Calendar className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
@@ -293,6 +312,12 @@ export const DestinationDrawer: React.FC = () => {
                     </span>
                   </div>
                 )}
+                {selectedDestination.accessibility && (
+                  <div className="pt-1 border-t border-slate-200/60 flex items-center gap-1.5 text-[10px] text-slate-500">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>{selectedDestination.accessibility}</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -305,18 +330,18 @@ export const DestinationDrawer: React.FC = () => {
                     <span className="font-bold text-slate-800 block">Entry Fee & Ticketing</span>
                     <p className="text-slate-600 mt-0.5">{selectedDestination.entryFee || 'Free or nominal entry'}</p>
                     {selectedDestination.ticketPricing && (
-                      <div className="grid grid-cols-3 gap-1 pt-1.5 mt-1 border-t border-slate-200/60 text-[10px]">
-                        <div className="bg-white/80 p-1.5 rounded-lg border border-slate-200 text-center">
+                      <div className="grid grid-cols-3 gap-1.5 pt-2 mt-1 border-t border-slate-200/60 text-[10px]">
+                        <div className="bg-white p-1.5 rounded-lg border border-slate-200 text-center shadow-xs">
                           <span className="text-slate-400 block font-semibold">Citizens</span>
                           <span className="font-bold text-slate-800">{selectedDestination.ticketPricing.local}</span>
                         </div>
                         {selectedDestination.ticketPricing.saarc && (
-                          <div className="bg-white/80 p-1.5 rounded-lg border border-slate-200 text-center">
+                          <div className="bg-white p-1.5 rounded-lg border border-slate-200 text-center shadow-xs">
                             <span className="text-slate-400 block font-semibold">SAARC</span>
                             <span className="font-bold text-slate-800">{selectedDestination.ticketPricing.saarc}</span>
                           </div>
                         )}
-                        <div className="bg-white/80 p-1.5 rounded-lg border border-slate-200 text-center">
+                        <div className="bg-white p-1.5 rounded-lg border border-slate-200 text-center shadow-xs">
                           <span className="text-slate-400 block font-semibold">Foreigners</span>
                           <span className="font-bold text-slate-800">{selectedDestination.ticketPricing.foreigner}</span>
                         </div>
@@ -343,7 +368,7 @@ export const DestinationDrawer: React.FC = () => {
                   <Navigation className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <span className="font-bold text-slate-800 block">Access Summary</span>
-                    <p className="text-slate-600 mt-0.5">{selectedDestination.travelRoutesSummary || 'Easily accessible via local rickshaws and boats from Sadarghat terminal.'}</p>
+                    <p className="text-slate-600 mt-0.5">{selectedDestination.travelRoutesSummary || 'Accessible via inter-district highways and local transit.'}</p>
                   </div>
                 </div>
                 {selectedDestination.transportationGuide && (
@@ -366,6 +391,12 @@ export const DestinationDrawer: React.FC = () => {
                         <span><strong>Road:</strong> {selectedDestination.transportationGuide.road}</span>
                       </div>
                     )}
+                    {selectedDestination.transportationGuide.water && (
+                      <div className="flex items-start gap-1.5 text-slate-600">
+                        <Ship className="w-3.5 h-3.5 text-cyan-600 shrink-0 mt-0.5" />
+                        <span><strong>Water:</strong> {selectedDestination.transportationGuide.water}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -381,7 +412,7 @@ export const DestinationDrawer: React.FC = () => {
                       Archival Records & Documents
                     </span>
                     {heritage.archivalDocuments.map((doc, idx) => (
-                      <div key={idx} className="p-2.5 bg-amber-50/70 rounded-xl border border-amber-200/80 space-y-1">
+                      <div key={idx} className="p-2.5 bg-amber-50/80 rounded-xl border border-amber-200/80 space-y-1">
                         <div className="flex items-start justify-between gap-1">
                           <h5 className="font-bold text-slate-900 text-xs leading-snug">
                             {doc.title}
@@ -417,10 +448,10 @@ export const DestinationDrawer: React.FC = () => {
                       Primary Epigraphs & Inscriptions
                     </span>
                     {heritage.primaryInscriptions.map((insc, idx) => (
-                      <div key={idx} className="p-2 bg-emerald-50/60 rounded-xl border border-emerald-200/80 space-y-1">
+                      <div key={idx} className="p-2 bg-emerald-50/70 rounded-xl border border-emerald-200/80 space-y-1">
                         <div className="flex items-center justify-between text-[10px]">
                           <span className="font-bold text-slate-800">{insc.title}</span>
-                          <span className="px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 font-mono text-[9px]">
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-900 font-mono text-[9px]">
                             {insc.script}
                           </span>
                         </div>
@@ -494,14 +525,14 @@ export const DestinationDrawer: React.FC = () => {
             onClick={handleAddToItinerary}
             className={`py-2.5 px-3 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
               isAddedToItinerary
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-emerald-600 text-white shadow-emerald-500/30'
                 : 'bg-white/80 hover:bg-white text-slate-800 border border-slate-200'
             }`}
           >
             {isAddedToItinerary ? (
               <>
                 <Check className="w-3.5 h-3.5 text-white" />
-                <span>ADDED!</span>
+                <span>ADDED TO PLANNER!</span>
               </>
             ) : (
               <span>ADD TO ITINERARY</span>
@@ -509,7 +540,7 @@ export const DestinationDrawer: React.FC = () => {
           </button>
           <button
             onClick={handleBookGuide}
-            className="py-2.5 px-3 rounded-full text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            className="py-2.5 px-3 rounded-full text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
           >
             <span>BOOK GUIDE</span>
           </button>
@@ -521,35 +552,40 @@ export const DestinationDrawer: React.FC = () => {
             <h4 className="text-[11px] font-extrabold text-slate-800 tracking-wide uppercase">
               user contributions
             </h4>
-            <span className="text-[10px] text-slate-400 font-medium cursor-pointer hover:text-slate-600">
-              recent all
+            <span className="text-[10px] text-slate-400 font-medium">
+              archival & field photos
             </span>
           </div>
 
-          {/* Photo Thumbnails */}
+          {/* Photo Thumbnails with Lightbox Preview */}
           <div className="grid grid-cols-4 gap-1.5">
             {selectedDestination.gallery.concat([
-              'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=200&q=80',
-              'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&w=200&q=80',
-              'https://images.unsplash.com/photo-1596895111956-bf1cf0599ce5?auto=format&fit=crop&w=200&q=80',
-              'https://images.unsplash.com/photo-1582650625119-3a31f8418b7d?auto=format&fit=crop&w=200&q=80',
+              'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=600&q=80',
+              'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&w=600&q=80',
+              'https://images.unsplash.com/photo-1596895111956-bf1cf0599ce5?auto=format&fit=crop&w=600&q=80',
+              'https://images.unsplash.com/photo-1582650625119-3a31f8418b7d?auto=format&fit=crop&w=600&q=80',
             ]).slice(0, 4).map((imgUrl, idx) => (
               <div
                 key={idx}
-                className="h-14 rounded-xl overflow-hidden shadow-sm hover:scale-105 transition-transform cursor-pointer border border-white"
+                onClick={() => setLightboxImage({ src: imgUrl, title: `${selectedDestination.name} Photo ${idx + 1}` })}
+                className="h-14 rounded-xl overflow-hidden shadow-sm hover:scale-105 transition-transform cursor-pointer border border-white relative group"
+                title="Click to expand full preview"
               >
                 <img
                   src={imgUrl}
                   alt={`contribution-${idx}`}
                   className="w-full h-full object-cover"
                 />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Eye className="w-3.5 h-3.5 text-white" />
+                </div>
               </div>
             ))}
           </div>
 
           {/* Authentic Recent Comment Card */}
           {selectedDestination.reviews && selectedDestination.reviews.length > 0 ? (
-            <div className="p-2.5 bg-white/60 rounded-2xl border border-slate-200/80 flex items-start gap-2.5 mt-2">
+            <div className="p-2.5 bg-white/70 rounded-2xl border border-slate-200/80 flex items-start gap-2.5 mt-2">
               <img
                 src={selectedDestination.reviews[0].authorAvatar}
                 alt={selectedDestination.reviews[0].authorName}
@@ -570,7 +606,7 @@ export const DestinationDrawer: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="p-2.5 bg-white/60 rounded-2xl border border-slate-200/80 flex items-start gap-2.5 mt-2">
+            <div className="p-2.5 bg-white/70 rounded-2xl border border-slate-200/80 flex items-start gap-2.5 mt-2">
               <img
                 src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
                 alt="reviewer"
@@ -581,7 +617,7 @@ export const DestinationDrawer: React.FC = () => {
                   verified field researcher
                 </div>
                 <p className="text-[11px] text-slate-600 leading-snug line-clamp-2 mt-0.5">
-                  Archival records verified against National Museum catalogs and Geological Survey records.
+                  Archival records verified against National Museum catalogs and Archaeological Survey of Bangladesh.
                 </p>
               </div>
             </div>

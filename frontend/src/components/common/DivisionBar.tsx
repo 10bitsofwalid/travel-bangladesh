@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useMapStore } from '../../store/useMapStore';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DivisionItem {
   name: string;
@@ -23,6 +24,30 @@ const DIVISIONS: DivisionItem[] = [
 
 export const DivisionBar: React.FC = () => {
   const { activeDivision, setDivisionFilter, flyToLocation } = useMapStore();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 6);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 6);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, []);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const offset = direction === 'left' ? -180 : 180;
+      scrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  };
 
   const handleSelectDivision = (div: DivisionItem) => {
     if (activeDivision === div.slug) {
@@ -34,32 +59,84 @@ export const DivisionBar: React.FC = () => {
     }
   };
 
+  const clearDivision = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDivisionFilter(null);
+    flyToLocation(90.3563, 23.6850, 7.2);
+  };
+
   return (
-    <div className="absolute top-20 left-4 right-4 z-20 flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar py-1 pointer-events-none">
-      <div className="flex items-center gap-1.5 glass-panel px-3 py-1.5 rounded-full pointer-events-auto shadow-xl border border-white/80 bg-white/75 backdrop-blur-md">
-        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 px-2 hidden sm:inline">
+    <nav
+      className="absolute top-[58px] sm:top-[74px] left-1/2 -translate-x-1/2 z-20 pointer-events-none max-w-[calc(100vw-16px)] sm:max-w-2xl lg:max-w-3xl flex items-center justify-center transition-all duration-300 px-1"
+      aria-label="Bangladesh Divisions Bar"
+    >
+      {/* Pristine, complete rounded glass capsule */}
+      <div className="glass-panel px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-full pointer-events-auto shadow-xl border border-white/90 bg-white/85 backdrop-blur-md flex items-center gap-1 max-w-full">
+        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 px-1.5 sm:px-2 shrink-0 hidden sm:inline">
           Divisions:
         </span>
-        {DIVISIONS.map((div) => {
-          const isActive = activeDivision === div.slug;
-          return (
-            <button
-              key={div.slug}
-              onClick={() => handleSelectDivision(div)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
-                isActive
-                  ? 'bg-slate-900 text-white shadow-md scale-105'
-                  : 'bg-white/40 text-slate-700 hover:bg-white hover:text-slate-900'
-              }`}
-            >
-              <span>{div.name}</span>
-              <span className={`text-[10px] font-serif ${isActive ? 'text-emerald-300' : 'text-slate-500'}`}>
-                {div.bnName}
-              </span>
-            </button>
-          );
-        })}
+
+        {canScrollLeft && (
+          <button
+            onClick={() => scroll('left')}
+            className="p-1 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0 cursor-pointer"
+            title="Scroll left"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        <div
+          ref={scrollRef}
+          onScroll={checkScroll}
+          className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth py-0.5 px-0.5"
+        >
+          {DIVISIONS.map((div) => {
+            const isActive = activeDivision === div.slug;
+            return (
+              <button
+                key={div.slug}
+                onClick={() => handleSelectDivision(div)}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-md scale-105 ring-2 ring-emerald-400/50'
+                    : 'bg-white/60 text-slate-700 hover:bg-white hover:text-slate-900 border border-slate-200/60'
+                }`}
+              >
+                <span>{div.name}</span>
+                <span
+                  className={`text-[9px] sm:text-[10px] font-serif ${
+                    isActive ? 'text-emerald-300' : 'text-slate-400'
+                  }`}
+                >
+                  {div.bnName}
+                </span>
+                {isActive && (
+                  <span
+                    onClick={clearDivision}
+                    className="ml-0.5 sm:ml-1 p-0.5 rounded-full hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+                    title="Clear division filter"
+                  >
+                    <X className="w-3 h-3" />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {canScrollRight && (
+          <button
+            onClick={() => scroll('right')}
+            className="p-1 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0 cursor-pointer"
+            title="Scroll right"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
-    </div>
+    </nav>
   );
 };
