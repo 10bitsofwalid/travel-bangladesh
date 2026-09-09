@@ -12,8 +12,9 @@ export const LeftFilterPanel: React.FC = () => {
 
   const trails = [
     { id: 'mughal', label: 'MUGHAL HERITAGE TRAIL', color: 'from-amber-500 to-rose-500' },
-    { id: 'sylhet', label: 'SYLHET TEA ROUTE', color: 'from-emerald-500 to-teal-500' },
-    { id: 'sundarbans', label: 'SUNDARBANS ADVENTURE', color: 'from-cyan-500 to-blue-500' },
+    { id: 'buddhist', label: 'BUDDHIST ARCHAEOLOGY TRAIL', color: 'from-amber-500 to-orange-500' },
+    { id: 'sylhet', label: 'SYLHET TEA & CLOUD FORESTS', color: 'from-emerald-500 to-teal-500' },
+    { id: 'sundarbans', label: 'SUNDARBANS DELTA ADVENTURE', color: 'from-cyan-500 to-blue-500' },
   ];
 
   return (

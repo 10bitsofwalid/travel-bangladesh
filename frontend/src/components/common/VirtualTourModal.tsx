@@ -13,26 +13,120 @@ export const VirtualTourModal: React.FC = () => {
 
   if (!isVirtualTourOpen) return null;
 
-  const hotspots = [
-    {
-      id: 'dome',
-      title: 'Grand Octagonal Dome',
-      desc: 'The central crowning feature constructed after the 1888 tornado, towering 27.5 meters above ground.',
-      positionPercent: 28,
-    },
-    {
-      id: 'stairs',
-      title: 'Ceremonial Marble Staircase',
-      desc: 'Grand stairs descending toward the Buriganga river where Nawab family flotillas docked.',
-      positionPercent: 52,
-    },
-    {
-      id: 'rangmahal',
-      title: 'Rangmahal & Durbar Hall',
-      desc: 'The eastern royal wing with polished wooden floors and ancestral portrait galleries.',
-      positionPercent: 78,
-    },
-  ];
+  const destId = selectedDestination?.id || 'poi-ahsan-manzil';
+
+  const getHotspots = () => {
+    switch (destId) {
+      case 'poi-sixty-dome':
+        return [
+          {
+            id: 'domes',
+            title: '77 Sultanate Domes',
+            desc: '70 low circular domed bays flanking 7 central traditional Bengali chauchala curved vaults.',
+            positionPercent: 28,
+          },
+          {
+            id: 'pillars',
+            title: '60 Slender Stone Pillars',
+            desc: 'Carved imported stone pillars supporting the multi-bay vaulted prayer chamber.',
+            positionPercent: 52,
+          },
+          {
+            id: 'tughlaq',
+            title: 'Tughlaq-Bengal Tapering Walls',
+            desc: 'Six-foot-thick tapering brick walls built to withstand heavy coastal monsoons and delta humidity.',
+            positionPercent: 78,
+          },
+        ];
+      case 'poi-paharpur':
+        return [
+          {
+            id: 'cruciform',
+            title: '22-Meter Central Cruciform Shrine',
+            desc: 'Monumental stepped terraced stupa that served as the architectural prototype for Pagan and Borobudur.',
+            positionPercent: 28,
+          },
+          {
+            id: 'plaques',
+            title: '2,800 Terracotta Relief Plaques',
+            desc: 'Friezes depicting everyday Pala life, archers, dancing deities, elephants, and lotus blossoms.',
+            positionPercent: 52,
+          },
+          {
+            id: 'cells',
+            title: '177 Monastic Cells (Bhikshu Kothis)',
+            desc: 'Vast square quadrangle housing centuries of visiting Buddhist scholars, including Atiśa Dipankara.',
+            positionPercent: 78,
+          },
+        ];
+      case 'poi-lalbagh':
+        return [
+          {
+            id: 'pari-bibi',
+            title: 'Tomb of Pari Bibi (Iran Dukht)',
+            desc: 'Central white marble chamber roofed by an octagonal copper-plated dome, surrounded by Rajmahal black basalt.',
+            positionPercent: 28,
+          },
+          {
+            id: 'hammam',
+            title: 'Diwan-i-Aam & Subterranean Hammam',
+            desc: 'Two-storied residence with Mughal boiling cauldrons and terracotta pipes that heated the bath chambers.',
+            positionPercent: 52,
+          },
+          {
+            id: 'mosque',
+            title: '3-Domed Fortress Mosque',
+            desc: 'Consecrated by Subahdar Shaista Khan in 1679 with classic fluted minarets and cusped arches.',
+            positionPercent: 78,
+          },
+        ];
+      case 'poi-sundarbans':
+        return [
+          {
+            id: 'mangroves',
+            title: 'Pneumatophore Forest Roots',
+            desc: 'Vertical breathing roots of Sundari and Golpata trees protruding through saline tidal mudflats.',
+            positionPercent: 25,
+          },
+          {
+            id: 'tiger-tracks',
+            title: 'Royal Bengal Tiger Corridor',
+            desc: 'Kotka tidal creek crossing frequented by wild tigers, spotted deer herds, and wild boars.',
+            positionPercent: 52,
+          },
+          {
+            id: 'estuary',
+            title: 'Bay of Bengal Brackish Confluence',
+            desc: 'Where delta freshwater meets the sea, supporting endangered Irrawaddy and Ganges river dolphins.',
+            positionPercent: 80,
+          },
+        ];
+      default:
+        return [
+          {
+            id: 'dome',
+            title: 'Grand Octagonal Dome',
+            desc: 'The central crowning feature reconstructed after the 1888 tornado, towering 27.5 meters above ground.',
+            positionPercent: 28,
+          },
+          {
+            id: 'stairs',
+            title: 'Ceremonial Marble Staircase',
+            desc: 'Grand stairs descending toward the Buriganga river where Nawab family flotillas docked.',
+            positionPercent: 52,
+          },
+          {
+            id: 'rangmahal',
+            title: 'Rangmahal & Durbar Hall',
+            desc: 'The eastern royal wing with polished wooden floors and ancestral portrait galleries.',
+            positionPercent: 78,
+          },
+        ];
+    }
+  };
+
+  const hotspots = getHotspots();
+  const panoramaImage = selectedDestination?.gallery?.[0] || selectedDestination?.coverImage || 'https://images.unsplash.com/photo-1582650625119-3a31f8418b7d?auto=format&fit=crop&w=2400&q=85';
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -97,8 +191,8 @@ export const VirtualTourModal: React.FC = () => {
             }}
           >
             <img
-              src="https://images.unsplash.com/photo-1582650625119-3a31f8418b7d?auto=format&fit=crop&w=2400&q=85"
-              alt="Ahsan Manzil 360 Panorama"
+              src={panoramaImage}
+              alt={`${selectedDestination?.name || 'Landmark'} 360 Panorama`}
               className="w-[260%] max-w-none h-full object-cover select-none"
               style={{
                 transform: `translateX(${rotation * 4}px)`,

@@ -10,6 +10,7 @@ export const MapCanvas: React.FC = () => {
     selectedDestination,
     selectDestination,
     activeView,
+    activeDivision,
   } = useMapStore();
 
   const [zoom, setZoom] = useState(1);
@@ -17,8 +18,9 @@ export const MapCanvas: React.FC = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
 
-  // Filter landmarks based on active toggles
+  // Filter landmarks based on active toggles and active division
   const visibleLandmarks = INITIAL_LANDMARKS.filter((item) => {
+    if (activeDivision && item.division?.slug !== activeDivision) return false;
     if (item.categoryType === 'NATURE' && !filterLayers.nature) return false;
     if (item.categoryType === 'HERITAGE' && !filterLayers.history) return false;
     if (item.categoryType === 'CULTURE' && !filterLayers.culture) return false;
@@ -221,9 +223,17 @@ export const MapCanvas: React.FC = () => {
         {/* Active Connected Thematic Trail or Planner Route */}
         {(selectedTrail || activeView === 'planner') && (
           <g>
-            {/* Dotted glowing connecting highway route path: Dhaka -> Sylhet -> Chittagong */}
+            {/* Dotted glowing connecting highway route path */}
             <path
-              d="M 515 478 Q 630 360 765 240 Q 770 450 820 660"
+              d={
+                selectedTrail === 'buddhist'
+                  ? 'M 290 185 Q 320 230 346 275 Q 380 285 415 290 Q 370 340 325 385'
+                  : selectedTrail === 'sylhet'
+                  ? 'M 665 395 Q 680 340 695 280 Q 740 420 765 545'
+                  : selectedTrail === 'sundarbans'
+                  ? 'M 472 650 Q 420 720 370 780 Q 450 795 535 805'
+                  : 'M 515 478 Q 630 360 765 240 Q 770 450 820 660'
+              }
               fill="none"
               stroke="#10b981"
               strokeWidth="4"
@@ -232,13 +242,20 @@ export const MapCanvas: React.FC = () => {
               opacity="0.85"
             />
             {/* Glowing route dots */}
-            {[
-              { x: 515, y: 478 },
-              { x: 575, y: 420 },
-              { x: 640, y: 350 },
-              { x: 710, y: 290 },
-              { x: 765, y: 240 },
-            ].map((pt, idx) => (
+            {(selectedTrail === 'buddhist'
+              ? [{ x: 290, y: 185 }, { x: 346, y: 275 }, { x: 415, y: 290 }, { x: 325, y: 385 }]
+              : selectedTrail === 'sylhet'
+              ? [{ x: 665, y: 395 }, { x: 695, y: 280 }, { x: 765, y: 545 }]
+              : selectedTrail === 'sundarbans'
+              ? [{ x: 472, y: 650 }, { x: 370, y: 780 }, { x: 535, y: 805 }]
+              : [
+                  { x: 515, y: 478 },
+                  { x: 575, y: 420 },
+                  { x: 640, y: 350 },
+                  { x: 710, y: 290 },
+                  { x: 765, y: 240 },
+                ]
+            ).map((pt, idx) => (
               <circle
                 key={idx}
                 cx={pt.x}
@@ -258,7 +275,36 @@ export const MapCanvas: React.FC = () => {
           const { x, y } = geoToSvg(item.longitude, item.latitude);
           const isSelected = selectedDestination?.id === item.id;
           const isAhsanManzil = item.id === 'poi-ahsan-manzil';
+          const isUnesco = item.heritageDetail?.unescoStatus === 'WORLD_HERITAGE_SITE';
           const isNature = item.categoryType === 'NATURE';
+          const isHeritage = item.categoryType === 'HERITAGE';
+
+          let auraColor = '#38bdf8';
+          let strokeColor = '#0284c7';
+          let pinColor = '#0284c7';
+          let glowFilter = 'url(#glow-emerald)';
+
+          if (isAhsanManzil) {
+            auraColor = '#c084fc';
+            strokeColor = '#a855f7';
+            pinColor = '#9333ea';
+            glowFilter = 'url(#glow-purple)';
+          } else if (isUnesco) {
+            auraColor = '#fbbf24';
+            strokeColor = '#d97706';
+            pinColor = '#b45309';
+            glowFilter = 'url(#glow-emerald)';
+          } else if (isNature) {
+            auraColor = '#34d399';
+            strokeColor = '#10b981';
+            pinColor = '#059669';
+            glowFilter = 'url(#glow-emerald)';
+          } else if (isHeritage) {
+            auraColor = '#fb923c';
+            strokeColor = '#ea580c';
+            pinColor = '#c2410c';
+            glowFilter = 'url(#glow-purple)';
+          }
 
           return (
             <g
@@ -270,8 +316,8 @@ export const MapCanvas: React.FC = () => {
               {/* Outer Pulsing Aura Ring */}
               <circle
                 r={isSelected ? '28' : '20'}
-                fill={isAhsanManzil ? '#c084fc' : isNature ? '#34d399' : '#38bdf8'}
-                opacity={isSelected ? '0.35' : '0.2'}
+                fill={auraColor}
+                opacity={isSelected ? '0.45' : '0.2'}
                 className={isSelected ? 'animate-ping' : ''}
               />
 
@@ -279,38 +325,49 @@ export const MapCanvas: React.FC = () => {
               <circle
                 r={isSelected ? '18' : '14'}
                 fill="#ffffff"
-                stroke={isAhsanManzil ? '#a855f7' : isNature ? '#10b981' : '#0284c7'}
-                strokeWidth={isSelected ? '3' : '2'}
-                filter={isAhsanManzil ? 'url(#glow-purple)' : 'url(#glow-emerald)'}
+                stroke={strokeColor}
+                strokeWidth={isSelected ? '3.5' : '2'}
+                filter={glowFilter}
                 className="transition-transform group-hover:scale-125"
               />
 
               {/* Center Beacon Icon Pin */}
               <circle
                 r="8"
-                fill={isAhsanManzil ? '#9333ea' : isNature ? '#059669' : '#0284c7'}
+                fill={pinColor}
               />
 
               {/* Tooltip on Hover */}
-              <g className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <g className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
                 <rect
-                  x="-60"
-                  y="-42"
-                  width="120"
-                  height="26"
-                  rx="13"
+                  x="-75"
+                  y="-46"
+                  width="150"
+                  height="34"
+                  rx="17"
                   fill="#0f172a"
-                  opacity="0.9"
+                  opacity="0.95"
                 />
                 <text
                   x="0"
-                  y="-26"
+                  y="-31"
                   textAnchor="middle"
                   fill="#ffffff"
                   fontSize="10"
                   fontWeight="bold"
                 >
                   {item.name}
+                </text>
+                <text
+                  x="0"
+                  y="-19"
+                  textAnchor="middle"
+                  fill="#34d399"
+                  fontSize="8.5"
+                  fontFamily="system-ui"
+                  fontWeight="600"
+                >
+                  {item.district?.name || 'Bangladesh'} {item.bnName ? `· ${item.bnName}` : ''}
                 </text>
               </g>
             </g>

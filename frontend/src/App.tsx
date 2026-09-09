@@ -4,6 +4,7 @@ import { Navbar } from './components/common/Navbar';
 import { MapCanvas } from './components/map/MapCanvas';
 import { LeftFilterPanel } from './components/map/LeftFilterPanel';
 import { DestinationDrawer } from './components/map/DestinationDrawer';
+import { DivisionBar } from './components/common/DivisionBar';
 import { MyAccountView } from './components/account/MyAccountView';
 import { SubmitSpotModal } from './components/submission/SubmitSpotModal';
 import { PlannerView } from './components/planner/PlannerView';
@@ -36,6 +37,7 @@ const MainLayout: React.FC = () => {
       {/* Explore View Overlays */}
       {activeView === 'explore' && (
         <>
+          <DivisionBar />
           <LeftFilterPanel />
           <DestinationDrawer />
         </>

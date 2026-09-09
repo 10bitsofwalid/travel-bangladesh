@@ -42,8 +42,12 @@ export const SearchModal: React.FC = () => {
         return (
           item.name.toLowerCase().includes(q) ||
           (item.bnName && item.bnName.toLowerCase().includes(q)) ||
-          item.district?.name.toLowerCase().includes(q) ||
-          item.division?.name.toLowerCase().includes(q)
+          (item.district?.name && item.district.name.toLowerCase().includes(q)) ||
+          (item.division?.name && item.division.name.toLowerCase().includes(q)) ||
+          (item.heritageDetail?.periodEra && item.heritageDetail.periodEra.toLowerCase().includes(q)) ||
+          (item.heritageDetail?.architecturalStyle && item.heritageDetail.architecturalStyle.toLowerCase().includes(q)) ||
+          (item.category?.name && item.category.name.toLowerCase().includes(q)) ||
+          item.summary.toLowerCase().includes(q)
         );
       })
     : [];
@@ -57,7 +61,7 @@ export const SearchModal: React.FC = () => {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search natural spots, heritage sites, or districts in Bangladesh..."
+            placeholder="Search natural spots, heritage sites, eras, or districts in Bangladesh..."
             value={filter.searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none font-medium"
@@ -92,7 +96,7 @@ export const SearchModal: React.FC = () => {
                 className="flex items-center justify-between p-2.5 rounded-2xl bg-white/60 hover:bg-white border border-slate-200/80 cursor-pointer transition-all shadow-sm group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm shrink-0">
                     <img
                       src={item.coverImage}
                       alt={item.name}
@@ -100,11 +104,23 @@ export const SearchModal: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                      {item.name}
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      {item.district?.name}, {item.division?.name}
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                        {item.name}
+                      </h4>
+                      {item.bnName && (
+                        <span className="text-[10px] text-emerald-600 font-serif">
+                          {item.bnName}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                      <span>{item.district?.name}, {item.division?.name}</span>
+                      {item.heritageDetail?.unescoStatus === 'WORLD_HERITAGE_SITE' && (
+                        <span className="text-[9px] font-bold px-1 rounded bg-blue-100 text-blue-700">
+                          UNESCO
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -118,17 +134,20 @@ export const SearchModal: React.FC = () => {
         <div className="space-y-2">
           <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            Popular Searches
+            Popular Historical & Natural Destinations
           </p>
           <div className="flex flex-wrap gap-2">
             {[
               'Ahsan Manzil',
-              'Sylhet Tea',
-              'Sundarbans',
+              'Lalbagh Fort',
               'Somapura Mahavihara',
               'Sixty Dome Mosque',
+              'Sundarbans',
+              'Mahasthangarh',
+              'Kantajew Temple',
+              'Panam City',
               'Sajek Valley',
-              'Lalbagh Fort',
+              'Kuakata',
             ].map((term) => (
               <button
                 key={term}

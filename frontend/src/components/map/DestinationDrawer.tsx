@@ -1,5 +1,22 @@
 import React, { useState } from 'react';
-import { Play, Star, X, Calendar, Ticket, Navigation, Check } from 'lucide-react';
+import {
+  Play,
+  Star,
+  X,
+  Calendar,
+  Ticket,
+  Navigation,
+  Check,
+  FileText,
+  Clock,
+  ExternalLink,
+  Scroll,
+  Sparkles,
+  MapPin,
+  Plane,
+  Train,
+  Car
+} from 'lucide-react';
 import { useMapStore } from '../../store/useMapStore';
 
 export const DestinationDrawer: React.FC = () => {
@@ -11,7 +28,7 @@ export const DestinationDrawer: React.FC = () => {
     setIsVirtualTourOpen,
   } = useMapStore();
 
-  const [activeTab, setActiveTab] = useState<'bestTime' | 'entry' | 'routes'>('bestTime');
+  const [activeTab, setActiveTab] = useState<'bestTime' | 'entry' | 'routes' | 'documents' | 'timeline'>('bestTime');
   const [isAddedToItinerary, setIsAddedToItinerary] = useState(false);
 
   if (!isDrawerOpen || !selectedDestination) return null;
@@ -25,9 +42,12 @@ export const DestinationDrawer: React.FC = () => {
     setActiveView('planner');
   };
 
+  const heritage = selectedDestination.heritageDetail;
+  const hasDocuments = (heritage?.archivalDocuments && heritage.archivalDocuments.length > 0) || (heritage?.sources && heritage.sources.length > 0);
+
   return (
     <aside
-      className="absolute top-24 right-5 bottom-6 w-[380px] lg:w-[410px] glass-panel rounded-3xl shadow-2xl flex flex-col overflow-hidden z-20 pointer-events-auto select-none transition-all duration-300 animate-in fade-in slide-in-from-right-8"
+      className="absolute top-24 right-5 bottom-6 w-[390px] lg:w-[430px] glass-panel rounded-3xl shadow-2xl flex flex-col overflow-hidden z-20 pointer-events-auto select-none transition-all duration-300 animate-in fade-in slide-in-from-right-8"
       aria-label="Landmark Details"
     >
       {/* Scrollable Container */}
@@ -40,12 +60,32 @@ export const DestinationDrawer: React.FC = () => {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
           {/* Subtle gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+          {/* UNESCO / Conservation Badges */}
+          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+            {heritage?.unescoStatus === 'WORLD_HERITAGE_SITE' && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-600/90 text-white border border-blue-400/50 shadow-md flex items-center gap-1 backdrop-blur-md">
+                <Sparkles className="w-3 h-3 text-amber-300" />
+                UNESCO WORLD HERITAGE
+              </span>
+            )}
+            {selectedDestination.categoryType === 'HERITAGE' && (
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/85 text-amber-950 border border-amber-300 shadow-sm backdrop-blur-md uppercase tracking-wider">
+                Historical Heritage
+              </span>
+            )}
+            {selectedDestination.categoryType === 'NATURE' && (
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/85 text-emerald-950 border border-emerald-300 shadow-sm backdrop-blur-md uppercase tracking-wider">
+                Natural Wonder
+              </span>
+            )}
+          </div>
 
           {/* Close button */}
           <button
             onClick={closeDrawer}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-all shadow-md"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-all shadow-md z-10"
             aria-label="Close Drawer"
           >
             <X className="w-4 h-4" />
@@ -53,31 +93,69 @@ export const DestinationDrawer: React.FC = () => {
 
           {/* Bottom Title & Subtitle Overlay */}
           <div className="absolute bottom-3 left-4 right-4">
-            <h2 className="text-xl font-extrabold text-white tracking-wide uppercase drop-shadow-md">
-              {selectedDestination.name}
-            </h2>
-            <p className="text-[11px] font-semibold text-slate-200 tracking-wider uppercase mt-0.5 drop-shadow-sm">
-              {selectedDestination.subtitle || `${selectedDestination.category?.name || 'HERITAGE'} | ${selectedDestination.district?.name || 'BANGLADESH'}`}
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-xl font-extrabold text-white tracking-wide uppercase drop-shadow-md">
+                {selectedDestination.name}
+              </h2>
+              {selectedDestination.bnName && (
+                <span className="text-emerald-300 font-serif text-sm font-semibold drop-shadow-sm">
+                  {selectedDestination.bnName}
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] font-semibold text-slate-200 tracking-wider uppercase mt-0.5 drop-shadow-sm flex items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span>
+                {selectedDestination.subtitle || `${selectedDestination.category?.name || 'HERITAGE'} | ${selectedDestination.district?.name || 'BANGLADESH'}`}
+              </span>
             </p>
           </div>
         </div>
 
+        {/* Historical Context Tag Bar */}
+        {heritage && (
+          <div className="grid grid-cols-2 gap-2 p-2.5 bg-white/70 rounded-2xl border border-slate-200/80 text-[11px]">
+            {heritage.periodEra && (
+              <div>
+                <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                  Dynasty / Era
+                </span>
+                <span className="font-bold text-slate-800 line-clamp-1">
+                  {heritage.periodEra}
+                </span>
+              </div>
+            )}
+            {heritage.architecturalStyle && (
+              <div>
+                <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block">
+                  Style
+                </span>
+                <span className="font-bold text-slate-800 line-clamp-1">
+                  {heritage.architecturalStyle}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Historical Chronicles */}
         <div className="space-y-1">
-          <h4 className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider">
+          <h4 className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1">
+            <Scroll className="w-3 h-3 text-amber-600" />
             HISTORICAL CHRONICLES
           </h4>
-          <p className="text-xs text-slate-600 leading-relaxed font-normal">
+          <p className="text-xs text-slate-600 leading-relaxed font-normal bg-white/40 p-2.5 rounded-xl border border-slate-200/60">
             {selectedDestination.chronicles || selectedDestination.summary}
           </p>
         </div>
 
-        {/* The Palace's Lore */}
+        {/* The Lore & Legend Section */}
         <div className="space-y-1">
-          <h4 className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider">
-            THE PALACE'S LORE
+          <h4 className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-emerald-600" />
+            {selectedDestination.loreTitle || "THE PALACE'S LORE"}
           </h4>
-          <p className="text-xs text-slate-600 leading-relaxed font-normal">
+          <p className="text-xs text-slate-600 leading-relaxed font-normal bg-white/40 p-2.5 rounded-xl border border-slate-200/60">
             {selectedDestination.lore || selectedDestination.description}
           </p>
         </div>
@@ -92,32 +170,31 @@ export const DestinationDrawer: React.FC = () => {
             <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600 transition-all shadow-sm">
               <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
             </div>
-            <span className="text-[9px] font-bold text-slate-800 mt-1 uppercase tracking-tight">
+            <span className="text-[9px] font-bold text-slate-800 mt-1 uppercase tracking-tight text-center">
               360° Virtual Tour
             </span>
           </button>
 
-          {/* Historical Timeline Mini Preview */}
-          <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white/60 border border-slate-200/80 shadow-sm">
+          {/* Historical Timeline Mini Button / Preview */}
+          <button
+            onClick={() => setActiveTab('timeline')}
+            className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white/60 hover:bg-white border border-slate-200/80 shadow-sm transition-all cursor-pointer group"
+          >
             <span className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
               HISTORICAL TIMELINE
             </span>
             <div className="flex items-center gap-1">
-              {selectedDestination.gallery.slice(0, 3).map((img, i) => (
-                <img
-                  key={i}
-                  src={img}
-                  alt="timeline"
-                  className="w-6 h-6 rounded-md object-cover border border-slate-300"
-                />
-              ))}
-              {selectedDestination.gallery.length === 0 && (
+              {selectedDestination.timeline.length > 0 ? (
+                <div className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 group-hover:bg-emerald-100">
+                  {selectedDestination.timeline[0]?.year} · {selectedDestination.timeline[selectedDestination.timeline.length - 1]?.year}
+                </div>
+              ) : (
                 <div className="text-[10px] font-mono text-slate-500 font-bold">
                   1678 · 1888
                 </div>
               )}
             </div>
-          </div>
+          </button>
 
           {/* Local Reviews ⭐⭐⭐⭐⭐ */}
           <div className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white/60 border border-slate-200/80 shadow-sm">
@@ -135,12 +212,12 @@ export const DestinationDrawer: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Tabs: BEST TIME TO VISIT | ENTRY DETAILS | TRAVEL ROUTES */}
+        {/* Quick Tabs: BEST TIME TO VISIT | ENTRY DETAILS | TRAVEL ROUTES | DOCUMENTS | TIMELINE */}
         <div className="pt-1">
-          <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-200/80 pb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
             <button
               onClick={() => setActiveTab('bestTime')}
-              className={`pb-1 transition-colors ${
+              className={`pb-1 whitespace-nowrap transition-colors ${
                 activeTab === 'bestTime'
                   ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
                   : 'hover:text-slate-900'
@@ -150,7 +227,7 @@ export const DestinationDrawer: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('entry')}
-              className={`pb-1 transition-colors ${
+              className={`pb-1 whitespace-nowrap transition-colors ${
                 activeTab === 'entry'
                   ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
                   : 'hover:text-slate-900'
@@ -160,7 +237,7 @@ export const DestinationDrawer: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('routes')}
-              className={`pb-1 transition-colors ${
+              className={`pb-1 whitespace-nowrap transition-colors ${
                 activeTab === 'routes'
                   ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
                   : 'hover:text-slate-900'
@@ -168,26 +245,244 @@ export const DestinationDrawer: React.FC = () => {
             >
               TRAVEL ROUTES
             </button>
+            {hasDocuments && (
+              <button
+                onClick={() => setActiveTab('documents')}
+                className={`pb-1 whitespace-nowrap transition-colors flex items-center gap-1 ${
+                  activeTab === 'documents'
+                    ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
+                    : 'hover:text-slate-900 text-amber-700'
+                }`}
+              >
+                <FileText className="w-3 h-3" />
+                DOCUMENTS & SOURCES
+              </button>
+            )}
+            {selectedDestination.timeline.length > 0 && (
+              <button
+                onClick={() => setActiveTab('timeline')}
+                className={`pb-1 whitespace-nowrap transition-colors flex items-center gap-1 ${
+                  activeTab === 'timeline'
+                    ? 'text-emerald-700 border-b-2 border-emerald-500 font-black'
+                    : 'hover:text-slate-900'
+                }`}
+              >
+                <Clock className="w-3 h-3" />
+                TIMELINE
+              </button>
+            )}
           </div>
 
           {/* Tab Content Box */}
-          <div className="p-2.5 bg-white/50 rounded-xl mt-2 text-xs text-slate-700">
+          <div className="p-3 bg-white/60 rounded-2xl border border-slate-200/80 mt-2 text-xs text-slate-700 space-y-2">
+            {/* 1. Best Time Tab */}
             {activeTab === 'bestTime' && (
-              <div className="flex items-start gap-2">
-                <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                <span>{selectedDestination.bestTimeToVisit || 'October to March (Mild weather)'}</span>
+              <div className="space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <Calendar className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-slate-800 block">Recommended Season</span>
+                    <p className="text-slate-600 mt-0.5">{selectedDestination.bestTimeToVisit || 'October to March (Mild weather)'}</p>
+                  </div>
+                </div>
+                {selectedDestination.difficulty && (
+                  <div className="pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-slate-500">Expedition Difficulty:</span>
+                    <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                      {selectedDestination.difficulty}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* 2. Entry Details Tab */}
             {activeTab === 'entry' && (
-              <div className="flex items-start gap-2">
-                <Ticket className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                <span>{selectedDestination.entryFee || 'Open 10:30 AM – 5:30 PM (Closed Thursdays)'}</span>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <Ticket className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <span className="font-bold text-slate-800 block">Entry Fee & Ticketing</span>
+                    <p className="text-slate-600 mt-0.5">{selectedDestination.entryFee || 'Free or nominal entry'}</p>
+                    {selectedDestination.ticketPricing && (
+                      <div className="grid grid-cols-3 gap-1 pt-1.5 mt-1 border-t border-slate-200/60 text-[10px]">
+                        <div className="bg-white/80 p-1.5 rounded-lg border border-slate-200 text-center">
+                          <span className="text-slate-400 block font-semibold">Citizens</span>
+                          <span className="font-bold text-slate-800">{selectedDestination.ticketPricing.local}</span>
+                        </div>
+                        {selectedDestination.ticketPricing.saarc && (
+                          <div className="bg-white/80 p-1.5 rounded-lg border border-slate-200 text-center">
+                            <span className="text-slate-400 block font-semibold">SAARC</span>
+                            <span className="font-bold text-slate-800">{selectedDestination.ticketPricing.saarc}</span>
+                          </div>
+                        )}
+                        <div className="bg-white/80 p-1.5 rounded-lg border border-slate-200 text-center">
+                          <span className="text-slate-400 block font-semibold">Foreigners</span>
+                          <span className="font-bold text-slate-800">{selectedDestination.ticketPricing.foreigner}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {selectedDestination.openingHours && (
+                  <div className="flex items-start gap-2 pt-1.5 border-t border-slate-200/60">
+                    <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-slate-800 block text-[11px]">Visiting Hours</span>
+                      <span className="text-slate-600 text-[11px]">{selectedDestination.openingHours}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* 3. Travel Routes Tab */}
             {activeTab === 'routes' && (
-              <div className="flex items-start gap-2">
-                <Navigation className="w-3.5 h-3.5 text-cyan-600 shrink-0 mt-0.5" />
-                <span>{selectedDestination.travelRoutesSummary || 'Easily accessible via local rickshaws and boats from Sadarghat terminal.'}</span>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <Navigation className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <span className="font-bold text-slate-800 block">Access Summary</span>
+                    <p className="text-slate-600 mt-0.5">{selectedDestination.travelRoutesSummary || 'Easily accessible via local rickshaws and boats from Sadarghat terminal.'}</p>
+                  </div>
+                </div>
+                {selectedDestination.transportationGuide && (
+                  <div className="space-y-1.5 pt-1.5 border-t border-slate-200/60 text-[11px]">
+                    {selectedDestination.transportationGuide.train && (
+                      <div className="flex items-start gap-1.5 text-slate-600">
+                        <Train className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span><strong>Rail:</strong> {selectedDestination.transportationGuide.train}</span>
+                      </div>
+                    )}
+                    {selectedDestination.transportationGuide.air && (
+                      <div className="flex items-start gap-1.5 text-slate-600">
+                        <Plane className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                        <span><strong>Air:</strong> {selectedDestination.transportationGuide.air}</span>
+                      </div>
+                    )}
+                    {selectedDestination.transportationGuide.road && (
+                      <div className="flex items-start gap-1.5 text-slate-600">
+                        <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <span><strong>Road:</strong> {selectedDestination.transportationGuide.road}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 4. Archival Documents & Sources Tab */}
+            {activeTab === 'documents' && (
+              <div className="space-y-3">
+                {heritage?.archivalDocuments && heritage.archivalDocuments.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1">
+                      <FileText className="w-3 h-3 text-amber-600" />
+                      Archival Records & Documents
+                    </span>
+                    {heritage.archivalDocuments.map((doc, idx) => (
+                      <div key={idx} className="p-2.5 bg-amber-50/70 rounded-xl border border-amber-200/80 space-y-1">
+                        <div className="flex items-start justify-between gap-1">
+                          <h5 className="font-bold text-slate-900 text-xs leading-snug">
+                            {doc.title}
+                          </h5>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-200/70 text-amber-900 shrink-0">
+                            {doc.documentType}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5">
+                          {doc.author && <span>By {doc.author}</span>}
+                          {doc.year && <span>({doc.year})</span>}
+                        </div>
+                        {doc.excerpt && (
+                          <blockquote className="text-[11px] text-slate-700 italic border-l-2 border-amber-400 pl-2 mt-1 font-serif">
+                            "{doc.excerpt}"
+                          </blockquote>
+                        )}
+                        {doc.archiveRepository && (
+                          <div className="text-[9px] text-slate-400 font-mono pt-1">
+                            Repository: {doc.archiveRepository}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Primary Inscriptions */}
+                {heritage?.primaryInscriptions && heritage.primaryInscriptions.length > 0 && (
+                  <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1">
+                      <Scroll className="w-3 h-3 text-emerald-600" />
+                      Primary Epigraphs & Inscriptions
+                    </span>
+                    {heritage.primaryInscriptions.map((insc, idx) => (
+                      <div key={idx} className="p-2 bg-emerald-50/60 rounded-xl border border-emerald-200/80 space-y-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="font-bold text-slate-800">{insc.title}</span>
+                          <span className="px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 font-mono text-[9px]">
+                            {insc.script}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-700 italic font-serif border-l-2 border-emerald-500 pl-2">
+                          "{insc.translation}"
+                        </p>
+                        <div className="text-[9px] text-slate-500">
+                          <strong>Material:</strong> {insc.material} · <strong>Location:</strong> {insc.currentLocation}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* General Citations */}
+                {heritage?.sources && heritage.sources.length > 0 && (
+                  <div className="space-y-1 pt-1 border-t border-slate-200/60">
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                      Academic Citations:
+                    </span>
+                    <ul className="space-y-1 text-[11px]">
+                      {heritage.sources.map((src, idx) => (
+                        <li key={idx} className="flex items-center justify-between text-slate-600">
+                          <span>• {src.title} {src.author && `(${src.author}, ${src.year || ''})`}</span>
+                          {src.url && (
+                            <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline inline-flex items-center">
+                              <ExternalLink className="w-2.5 h-2.5 ml-1" />
+                            </a>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 5. Timeline Tab */}
+            {activeTab === 'timeline' && (
+              <div className="space-y-2.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-emerald-600" />
+                  Chronological Historical Milestones
+                </span>
+                <div className="relative border-l-2 border-emerald-400/40 ml-2 pl-3 space-y-3">
+                  {selectedDestination.timeline.map((mile, idx) => (
+                    <div key={idx} className="relative group">
+                      <div className="absolute -left-[19px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-600 ring-4 ring-emerald-100" />
+                      <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                        {mile.year}
+                      </span>
+                      <h5 className="font-bold text-slate-800 text-xs mt-0.5">
+                        {mile.event}
+                      </h5>
+                      {mile.details && (
+                        <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                          {mile.details}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -197,7 +492,7 @@ export const DestinationDrawer: React.FC = () => {
         <div className="grid grid-cols-2 gap-2 pt-1">
           <button
             onClick={handleAddToItinerary}
-            className={`py-2.5 px-3 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm ${
+            className={`py-2.5 px-3 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
               isAddedToItinerary
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white/80 hover:bg-white text-slate-800 border border-slate-200'
@@ -214,7 +509,7 @@ export const DestinationDrawer: React.FC = () => {
           </button>
           <button
             onClick={handleBookGuide}
-            className="py-2.5 px-3 rounded-full text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all flex items-center justify-center gap-1.5"
+            className="py-2.5 px-3 rounded-full text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <span>BOOK GUIDE</span>
           </button>
@@ -223,7 +518,7 @@ export const DestinationDrawer: React.FC = () => {
         {/* User Contributions Section */}
         <div className="space-y-2 pt-2 border-t border-slate-200/60">
           <div className="flex items-center justify-between">
-            <h4 className="text-[11px] font-extrabold text-slate-800 tracking-wide">
+            <h4 className="text-[11px] font-extrabold text-slate-800 tracking-wide uppercase">
               user contributions
             </h4>
             <span className="text-[10px] text-slate-400 font-medium cursor-pointer hover:text-slate-600">
@@ -252,22 +547,45 @@ export const DestinationDrawer: React.FC = () => {
             ))}
           </div>
 
-          {/* Recent Comment Card */}
-          <div className="p-2.5 bg-white/60 rounded-2xl border border-slate-200/80 flex items-start gap-2.5 mt-2">
-            <img
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
-              alt="reviewer"
-              className="w-7 h-7 rounded-full object-cover border border-slate-300 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-bold text-slate-700">
-                recent the comments
+          {/* Authentic Recent Comment Card */}
+          {selectedDestination.reviews && selectedDestination.reviews.length > 0 ? (
+            <div className="p-2.5 bg-white/60 rounded-2xl border border-slate-200/80 flex items-start gap-2.5 mt-2">
+              <img
+                src={selectedDestination.reviews[0].authorAvatar}
+                alt={selectedDestination.reviews[0].authorName}
+                className="w-7 h-7 rounded-full object-cover border border-slate-300 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-800">
+                    {selectedDestination.reviews[0].authorName}
+                  </span>
+                  <span className="text-[9px] text-slate-400">
+                    {selectedDestination.reviews[0].date}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-snug line-clamp-3 mt-0.5">
+                  {selectedDestination.reviews[0].comment}
+                </p>
               </div>
-              <p className="text-[11px] text-slate-600 leading-snug line-clamp-2 mt-0.5">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed da eiusmod iannil.
-              </p>
             </div>
-          </div>
+          ) : (
+            <div className="p-2.5 bg-white/60 rounded-2xl border border-slate-200/80 flex items-start gap-2.5 mt-2">
+              <img
+                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
+                alt="reviewer"
+                className="w-7 h-7 rounded-full object-cover border border-slate-300 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-bold text-slate-700">
+                  verified field researcher
+                </div>
+                <p className="text-[11px] text-slate-600 leading-snug line-clamp-2 mt-0.5">
+                  Archival records verified against National Museum catalogs and Geological Survey records.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </aside>

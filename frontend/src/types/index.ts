@@ -36,6 +36,33 @@ export interface Category {
   description: string;
 }
 
+export interface ArchivalDocument {
+  title: string;
+  author?: string;
+  year?: string;
+  publisher?: string;
+  url?: string;
+  documentType:
+    | 'Imperial Firman'
+    | 'Archaeological Survey'
+    | 'UNESCO Dossier'
+    | 'Gazetteer'
+    | 'Ancient Manuscript'
+    | 'Gazette Notification'
+    | 'Academic Journal';
+  archiveRepository?: string;
+  excerpt?: string;
+}
+
+export interface PrimaryInscription {
+  title: string;
+  script: string;
+  dateEra: string;
+  material: string;
+  translation: string;
+  currentLocation: string;
+}
+
 export interface HeritageDetail {
   id: string;
   periodEra?: string;
@@ -53,6 +80,9 @@ export interface HeritageDetail {
     publisher?: string;
     year?: string;
   }>;
+  archivalDocuments?: ArchivalDocument[];
+  primaryInscriptions?: PrimaryInscription[];
+  folkloreAndLegends?: string;
 }
 
 export interface TimelineMilestone {
@@ -84,11 +114,12 @@ export interface Destination {
   description: string;
   chronicles?: string; // "Bangladesh coloured in a mesmerizing architecture..."
   lore?: string; // "The palace's lore arouses in the past prior..."
+  loreTitle?: string; // e.g. "THE PALACE'S LORE", "HISTORICAL LORE & FOLKLORE"
   divisionId: string;
   districtId: string;
   categoryId: string;
   categoryType: CategoryType;
-  thematicTrail?: 'mughal' | 'sylhet' | 'sundarbans';
+  thematicTrail?: 'mughal' | 'sylhet' | 'sundarbans' | 'buddhist' | string;
   latitude: number;
   longitude: number;
   elevation?: number;
@@ -98,7 +129,19 @@ export interface Destination {
   difficulty?: DifficultyLevel;
   accessibility?: string;
   entryFee?: string;
+  openingHours?: string;
+  ticketPricing?: {
+    local: string;
+    saarc?: string;
+    foreigner: string;
+  };
   travelRoutesSummary?: string;
+  transportationGuide?: {
+    air?: string;
+    train?: string;
+    road?: string;
+    water?: string;
+  };
   rating: number;
   reviewCount: number;
   reviews: DestinationReview[];
