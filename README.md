@@ -119,29 +119,29 @@ A guided modal allowing certified contributors to submit undocumented heritage o
 ```mermaid
 graph TD
     subgraph Client ["Frontend (React 18 + TypeScript + Vite)"]
-        UI[Glassmorphic UI / Tailwind CSS]
-        Zustand[Zustand State Store (useMapStore)]
-        MapCanvas[Leaflet Map Engine + GeoJSON]
-        Audio[Web Audio Ambient Synthesizer]
-        ReactQuery[TanStack React Query]
+        UI["Glassmorphic UI / Tailwind CSS"]
+        Zustand["Zustand State Store (useMapStore)"]
+        MapCanvas["Leaflet Map Engine + GeoJSON"]
+        Audio["Web Audio Ambient Synthesizer"]
+        ReactQuery["TanStack React Query"]
     end
 
     subgraph Server ["Backend (Node.js + Express + TypeScript)"]
-        App[Express REST App]
-        Routes[API v1 Routes: Health, Geo, Destinations]
-        Middlewares[Helmet, CORS, RequestLogger, ErrorHandler]
-        Zod[Zod Validation Schemas]
+        App["Express REST App"]
+        Routes["API v1 Routes: Health, Geo, Destinations"]
+        Middlewares["Helmet, CORS, RequestLogger, ErrorHandler"]
+        Zod["Zod Validation Schemas"]
     end
 
     subgraph Data ["Database Layer"]
-        Prisma[Prisma ORM 5.19]
-        Postgres[(PostgreSQL + PostGIS Geometry)]
+        Prisma["Prisma ORM 5.19"]
+        Postgres["PostgreSQL + PostGIS Geometry"]
     end
 
     UI --> Zustand
     Zustand --> MapCanvas
     UI --> Audio
-    ReactQuery -->|HTTP / JSON| Routes
+    ReactQuery -->|"HTTP / JSON"| Routes
     Routes --> Middlewares
     Routes --> Zod
     Routes --> Prisma
@@ -262,15 +262,15 @@ Default configuration in `.env.example`:
 ```env
 # Backend Configuration
 PORT=5000
-NODE_ENV=development
+NODE_ENV=
 CLIENT_URL=http://localhost:5173
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/explorebd?schema=public"
-JWT_SECRET=super_secret_explore_bangladesh_jwt_key_change_in_production
-JWT_EXPIRES_IN=7d
+DATABASE_URL=
+JWT_SECRET=
+JWT_EXPIRES_IN=
 
 # Frontend Configuration
-VITE_API_URL=http://localhost:5000/api/v1
-VITE_MAPBOX_TOKEN=pk.eyJ1IjoiZXhwbG9yZWJkIiwiYSI6ImNscHh4eXp4eTAwMDgybW12M3g2NHdqcXoifQ.demo
+VITE_API_URL=
+VITE_MAPBOX_TOKEN=
 ```
 
 ---
@@ -423,3 +423,10 @@ Historical information, epigraphic texts, and architectural research featured in
 ## 📄 License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
+
+## 👨🏼‍💻 Author
+
+GitHub: 10bitsofwalid
+
+Gmail: [walidrahman.officials@gmail.com]
