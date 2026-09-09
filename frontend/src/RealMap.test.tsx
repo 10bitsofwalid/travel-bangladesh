@@ -20,23 +20,22 @@ describe('Real Bangladesh Map Implementation Tests', () => {
   it('renders floating visual map style switcher with Topography, Standard, and Satellite options', () => {
     render(<MapCanvas />);
 
-    const styleBtn = screen.getByTitle('Switch Map Visual Style');
-    expect(styleBtn).toBeDefined();
-    expect(screen.getByText(/Topography/i)).toBeDefined();
+    const styleToolbar = screen.getByTitle('Switch Map Visual Style');
+    expect(styleToolbar).toBeDefined();
 
-    // Click to open style dropdown
-    fireEvent.click(styleBtn);
+    const topoBtn = screen.getByRole('button', { name: /Topography/i });
+    const standardBtn = screen.getByRole('button', { name: /Standard/i });
+    const satelliteBtn = screen.getByRole('button', { name: /Satellite/i });
 
-    expect(screen.getByText('Topography (Humanitarian)')).toBeDefined();
-    expect(screen.getByText('Standard (OpenStreetMap)')).toBeDefined();
-    expect(screen.getByText('Real Satellite (Esri)')).toBeDefined();
+    expect(topoBtn).toBeDefined();
+    expect(standardBtn).toBeDefined();
+    expect(satelliteBtn).toBeDefined();
 
     // Switch to Satellite
-    const satelliteOption = screen.getByText('Real Satellite (Esri)');
-    fireEvent.click(satelliteOption);
+    fireEvent.click(satelliteBtn);
 
-    // Style button now shows Satellite
-    expect(screen.getByText(/Satellite/i)).toBeDefined();
+    // Style button shows active satellite
+    expect(satelliteBtn.className).toContain('bg-emerald-600');
   });
 
   it('renders and operates Zoom In, Zoom Out, and Reset Map View controls', () => {

@@ -24,7 +24,7 @@ if (typeof window !== 'undefined') {
     };
   }
 }
-import { ZoomIn, ZoomOut, RotateCcw, MapPin, Layers, Sparkles } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, MapPin, Sparkles } from 'lucide-react';
 import { useMapStore } from '../../store/useMapStore';
 import { INITIAL_LANDMARKS } from '../../data/mockData';
 import {
@@ -32,7 +32,6 @@ import {
   BANGLADESH_DEFAULT_ZOOM,
   BANGLADESH_MAX_BOUNDS,
   BANGLADESH_DIVISIONS_GEOJSON,
-  BANGLADESH_MASK_GEOJSON,
   BANGLADESH_BORDER_COORDINATES,
   DIVISION_GEO_MAP,
   THEMATIC_TRAILS_GEO,
@@ -82,7 +81,6 @@ export const MapCanvas: React.FC = () => {
   const trailsLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
   const [activeStyle, setActiveStyle] = useState<BaseMapStyle>('voyager');
-  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   // Filter landmarks based on active toggles and active division
@@ -104,7 +102,6 @@ export const MapCanvas: React.FC = () => {
   const switchBaseMap = useCallback((style: BaseMapStyle) => {
     if (!mapRef.current) return;
     setActiveStyle(style);
-    setIsStyleMenuOpen(false);
 
     if (tileLayerRef.current) {
       mapRef.current.removeLayer(tileLayerRef.current);
@@ -150,24 +147,12 @@ export const MapCanvas: React.FC = () => {
     const divisionsGroup = L.geoJSON(BANGLADESH_DIVISIONS_GEOJSON).addTo(map);
     divisionsLayerGroupRef.current = divisionsGroup;
 
-    // Bangladesh Outer Mask Layer: Mutes non-Bangladesh territories so only Bangladesh is shown
-    L.geoJSON(BANGLADESH_MASK_GEOJSON, {
-      style: {
-        fillColor: '#d6e5d8',
-        fillOpacity: 0.92,
-        color: '#059669',
-        weight: 2,
-        opacity: 0.85,
-      },
-      interactive: false,
-    }).addTo(map);
-
     // National boundary outline
     L.polyline(
       BANGLADESH_BORDER_COORDINATES.map(([lng, lat]) => [lat, lng]),
       {
-        color: '#047857',
-        weight: 2.5,
+        color: '#059669',
+        weight: 3,
         opacity: 0.9,
         lineCap: 'round',
         lineJoin: 'round',
@@ -554,65 +539,64 @@ export const MapCanvas: React.FC = () => {
       role="region"
       aria-label="Interactive Map of Bangladesh"
     >
-      {/* Floating Map Style Switcher (Bottom-Left above Zoom buttons) */}
-      <div className="absolute bottom-20 left-3 sm:left-5 z-20 pointer-events-auto">
-        <div className="relative">
+      {/* Bottom Center Bar: Segmented Map Visual Style Switcher & Coordinate Status */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1.5 pointer-events-auto select-none max-w-[calc(100vw-24px)]">
+        {/* Sleek Segmented Switcher */}
+        <div
+          className="glass-panel p-1 rounded-full shadow-xl border border-white/90 bg-white/90 backdrop-blur-md flex items-center gap-1 text-xs"
+          title="Switch Map Visual Style"
+          role="toolbar"
+          aria-label="Map Visual Style Switcher"
+        >
           <button
-            onClick={() => setIsStyleMenuOpen((prev) => !prev)}
-            className="glass-panel px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 text-xs font-bold text-slate-800 hover:scale-105 transition-all cursor-pointer border border-white/90 bg-white/90"
-            title="Switch Map Visual Style"
+            onClick={() => switchBaseMap('voyager')}
+            className={`px-3 py-1 rounded-full font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeStyle === 'voyager'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+            title="Topography (Humanitarian)"
+            aria-label="Topography"
           >
-            <Layers className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="capitalize">{activeStyle === 'voyager' ? 'Topography' : activeStyle === 'positron' ? 'Standard' : 'Satellite'}</span>
+            <span>Topography</span>
+            {activeStyle === 'voyager' && <Sparkles className="w-3 h-3 text-emerald-200" />}
           </button>
-
-          {isStyleMenuOpen && (
-            <div className="absolute bottom-full mb-2 left-0 w-48 glass-panel rounded-2xl p-1.5 shadow-2xl space-y-1 border border-white/90 bg-white/95 animate-in fade-in zoom-in-95">
-              <button
-                onClick={() => switchBaseMap('voyager')}
-                className={`w-full px-3 py-1.5 text-left text-xs font-bold rounded-xl flex items-center justify-between transition-colors ${
-                  activeStyle === 'voyager'
-                    ? 'bg-emerald-500 text-white shadow-sm'
-                    : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <span>Topography (Humanitarian)</span>
-                {activeStyle === 'voyager' && <Sparkles className="w-3 h-3" />}
-              </button>
-              <button
-                onClick={() => switchBaseMap('positron')}
-                className={`w-full px-3 py-1.5 text-left text-xs font-bold rounded-xl flex items-center justify-between transition-colors ${
-                  activeStyle === 'positron'
-                    ? 'bg-emerald-500 text-white shadow-sm'
-                    : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <span>Standard (OpenStreetMap)</span>
-                {activeStyle === 'positron' && <Sparkles className="w-3 h-3" />}
-              </button>
-              <button
-                onClick={() => switchBaseMap('satellite')}
-                className={`w-full px-3 py-1.5 text-left text-xs font-bold rounded-xl flex items-center justify-between transition-colors ${
-                  activeStyle === 'satellite'
-                    ? 'bg-emerald-500 text-white shadow-sm'
-                    : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <span>Real Satellite (Esri)</span>
-                {activeStyle === 'satellite' && <Sparkles className="w-3 h-3" />}
-              </button>
-            </div>
-          )}
+          <button
+            onClick={() => switchBaseMap('positron')}
+            className={`px-3 py-1 rounded-full font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeStyle === 'positron'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+            title="Standard (OpenStreetMap)"
+            aria-label="Standard"
+          >
+            <span>Standard</span>
+            {activeStyle === 'positron' && <Sparkles className="w-3 h-3 text-emerald-200" />}
+          </button>
+          <button
+            onClick={() => switchBaseMap('satellite')}
+            className={`px-3 py-1 rounded-full font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeStyle === 'satellite'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+            title="Real Satellite (Esri)"
+            aria-label="Satellite"
+          >
+            <span>Satellite</span>
+            {activeStyle === 'satellite' && <Sparkles className="w-3 h-3 text-emerald-200" />}
+          </button>
         </div>
-      </div>
 
-      {/* Map Attribution & Real Coordinate Tracking Bar (Bottom Center) */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 text-[10px] sm:text-[11px] text-slate-700 font-semibold bg-white/85 px-4 py-1 rounded-full border border-white/90 shadow-lg pointer-events-none backdrop-blur-md whitespace-nowrap">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-        <span>
-          ExploreBD Geospatial Surface · WGS84
-          {cursorCoords ? ` · ${cursorCoords.lat.toFixed(4)}° N, ${cursorCoords.lng.toFixed(4)}° E` : ''}
-        </span>
+        {/* Map Attribution & Real Coordinate Tracking Bar */}
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-600 font-semibold bg-white/80 px-3.5 py-0.5 rounded-full border border-white/90 shadow-sm pointer-events-none backdrop-blur-md whitespace-nowrap">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span>
+            ExploreBD Geospatial Surface · WGS84
+            {cursorCoords ? ` · ${cursorCoords.lat.toFixed(4)}° N, ${cursorCoords.lng.toFixed(4)}° E` : ''}
+          </span>
+        </div>
       </div>
 
       {/* Floating Re-Open Drawer Button (Shown if drawer is closed but landmark is selected) */}
