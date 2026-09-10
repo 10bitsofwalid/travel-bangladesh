@@ -69,6 +69,8 @@ interface MapState {
   activeItineraryDay: number;
   selectedGuideId: string;
   guides: VerifiedGuide[];
+  selectedHotelId: string | null;
+  selectedTransportOptionId: string;
 
   // Residence & Route Navigation
   userResidence: ResidenceLocation;
@@ -99,6 +101,8 @@ interface MapState {
   toggleSetting: (settingKey: keyof UserProfile['settings']) => void;
   setActiveItineraryDay: (day: number) => void;
   setSelectedGuideId: (id: string) => void;
+  setSelectedHotelId: (id: string | null) => void;
+  setSelectedTransportOptionId: (id: string) => void;
   removeItineraryDay: (id: string) => void;
   addToItinerary: (destination: Destination) => void;
   addCustomItineraryDay: (title: string, location: string) => void;
@@ -155,6 +159,8 @@ export const useMapStore = create<MapState>((set, get) => ({
   activeItineraryDay: 1,
   selectedGuideId: 'guide-1',
   guides: MOCK_VERIFIED_GUIDES,
+  selectedHotelId: null,
+  selectedTransportOptionId: 'transport-private-van',
 
   // Residence & Route Navigation
   userResidence: RESIDENCE_PRESETS[0], // Default to Dhaka
@@ -300,6 +306,8 @@ export const useMapStore = create<MapState>((set, get) => ({
   setActiveItineraryDay: (activeItineraryDay) => set({ activeItineraryDay }),
 
   setSelectedGuideId: (selectedGuideId) => set({ selectedGuideId }),
+  setSelectedHotelId: (selectedHotelId) => set({ selectedHotelId }),
+  setSelectedTransportOptionId: (selectedTransportOptionId) => set({ selectedTransportOptionId }),
 
   removeItineraryDay: (id) =>
     set((state) => {

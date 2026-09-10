@@ -189,19 +189,43 @@ export const DestinationDrawer: React.FC = () => {
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setActiveTab('routes');
-                setIsRouteActive(true);
-              }}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wide uppercase transition-all shrink-0 cursor-pointer shadow-xs ${
-                isRouteActive
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  : 'bg-white text-emerald-700 border border-emerald-300 hover:bg-emerald-50'
-              }`}
-            >
-              {isRouteActive ? 'Route On Map' : 'View Route'}
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsRouteActive(!isRouteActive);
+                }}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wide uppercase transition-all shrink-0 cursor-pointer shadow-xs flex items-center gap-1 ${
+                  isRouteActive
+                    ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                }`}
+                title={isRouteActive ? 'Remove Route from Map' : 'Show Route on Map'}
+                aria-label={isRouteActive ? 'Remove Route from Map' : 'Show Route on Map'}
+              >
+                {isRouteActive ? (
+                  <>
+                    <X className="w-3 h-3 text-rose-600" />
+                    <span>Remove Route</span>
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="w-3 h-3" />
+                    <span>Route On Map</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('routes');
+                  setIsRouteActive(true);
+                }}
+                className="px-2 py-1 rounded-full text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 transition-colors cursor-pointer"
+                title="View Route Details"
+              >
+                Details →
+              </button>
+            </div>
           </div>
         )}
 
@@ -452,13 +476,24 @@ export const DestinationDrawer: React.FC = () => {
                         </div>
                         <button
                           onClick={() => setIsRouteActive(!isRouteActive)}
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 ${
                             isRouteActive
-                              ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/50'
-                              : 'bg-white/10 hover:bg-white/20 text-slate-300 border border-white/20'
+                              ? 'bg-rose-500/90 hover:bg-rose-600 text-white shadow-sm shadow-rose-900/50 border border-rose-400/50'
+                              : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-sm shadow-emerald-500/50'
                           }`}
+                          title={isRouteActive ? 'Remove Route from Map' : 'Show Route on Map'}
                         >
-                          {isRouteActive ? '● Map Route Active' : 'Show on Map'}
+                          {isRouteActive ? (
+                            <>
+                              <X className="w-3 h-3" />
+                              <span>Remove Route</span>
+                            </>
+                          ) : (
+                            <>
+                              <Navigation className="w-3 h-3" />
+                              <span>Show on Map</span>
+                            </>
+                          )}
                         </button>
                       </div>
 
@@ -508,6 +543,35 @@ export const DestinationDrawer: React.FC = () => {
                     <div className="text-[10px] bg-emerald-950/70 border border-emerald-500/30 text-emerald-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
                       <Route className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       <span className="truncate"><strong>Primary Corridor:</strong> {residenceRoute.modes.find((m) => m.mode === 'road')?.operatorOrHighway || 'National Highway'}</span>
+                    </div>
+
+                    {/* Active Route Status & Unselect Control Bar */}
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-xs">
+                      <div className="flex items-center gap-1.5 text-emerald-300 text-[11px] font-bold">
+                        <span className={`w-2 h-2 rounded-full ${isRouteActive ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                        <span>{isRouteActive ? 'Direct Road Route Active on Map' : 'Route Not Drawn on Map'}</span>
+                      </div>
+                      <button
+                        onClick={() => setIsRouteActive(!isRouteActive)}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase transition-all flex items-center gap-1 cursor-pointer ${
+                          isRouteActive
+                            ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30'
+                            : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30'
+                        }`}
+                        title={isRouteActive ? 'Unselect / Remove Route from Map' : 'Draw Route on Map'}
+                      >
+                        {isRouteActive ? (
+                          <>
+                            <X className="w-3 h-3 text-rose-400" />
+                            <span>Unselect Route</span>
+                          </>
+                        ) : (
+                          <>
+                            <Route className="w-3 h-3 text-emerald-400" />
+                            <span>Draw on Map</span>
+                          </>
+                        )}
+                      </button>
                     </div>
 
                     {/* Transit Mode Tabs */}

@@ -128,6 +128,15 @@ export const RESIDENCE_PRESETS: ResidenceLocation[] = [
 
 // Strategic Bridge & Highway Transit Nodes across Bangladesh
 const CORRIDOR_NODES = {
+  // Dhaka - Mymensingh Highway (N3)
+  tongiBridge: [23.8950, 90.4020] as [number, number],
+  gazipurChowrasta: [23.9930, 90.3800] as [number, number],
+  rajendrapurBypass: [24.0850, 90.4180] as [number, number],
+  mawnaJunction: [24.1850, 90.4120] as [number, number],
+  bhalukaHighway: [24.3750, 90.3820] as [number, number],
+  trishalJunction: [24.5800, 90.4160] as [number, number],
+  mymensinghBypass: [24.7250, 90.3950] as [number, number],
+
   // Padma Multipurpose Bridge (Connecting Dhaka/Central to Khulna & Barisal)
   padmaMawa: [23.4752, 90.2647] as [number, number],
   padmaJanjira: [23.4183, 90.1852] as [number, number],
@@ -154,6 +163,56 @@ const CORRIDOR_NODES = {
   habiganjBypass: [24.3800, 91.4150] as [number, number],
   moulvibazarBypass: [24.4820, 91.7650] as [number, number],
 };
+
+export interface RealRoadRouteResult {
+  coordinates: [number, number][];
+  distanceKm: number;
+  durationMinutes: number;
+}
+
+// In-memory cache for fetched OSRM real road coordinates
+export const roadRouteCache = new Map<string, RealRoadRouteResult>();
+
+/**
+ * Asynchronously fetches direct turn-by-turn road geometry from the OpenStreetMap OSRM routing engine.
+ * Converts GeoJSON [lng, lat] coordinates into Leaflet [lat, lng] format following actual street and highway corridors.
+ */
+export async function fetchRealRoadRoute(
+  origin: ResidenceLocation,
+  dest: Destination
+): Promise<RealRoadRouteResult | null> {
+  const cacheKey = `${origin.id}_${dest.id}`;
+  if (roadRouteCache.has(cacheKey)) {
+    return roadRouteCache.get(cacheKey)!;
+  }
+
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${origin.longitude},${origin.latitude};${dest.longitude},${dest.latitude}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.routes || !data.routes[0] || !data.routes[0].geometry) return null;
+
+    const route = data.routes[0];
+    const leafletCoords: [number, number][] = route.geometry.coordinates.map(
+      (c: [number, number]) => [c[1], c[0]]
+    );
+
+    const distanceKm = Math.round(route.distance / 1000);
+    const durationMinutes = Math.round(route.duration / 60);
+
+    const result: RealRoadRouteResult = {
+      coordinates: leafletCoords,
+      distanceKm,
+      durationMinutes,
+    };
+
+    roadRouteCache.set(cacheKey, result);
+    return result;
+  } catch (_err) {
+    return null;
+  }
+}
 
 // Calculate Haversine distance in kilometers
 export function calculateHaversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -245,8 +304,13 @@ export function generateHighwayRoutePoints(
         points.push([21.8500, 92.0500]); // Dohazari-Chakaria highway
       }
     } else if (dest.division?.slug === 'mymensingh') {
-      points.push([24.2000, 90.4100]); // Gazipur - Bhaluka Highway (N3)
-      points.push([24.5500, 90.4100]); // Trishal bypass
+      points.push(CORRIDOR_NODES.tongiBridge);
+      points.push(CORRIDOR_NODES.gazipurChowrasta);
+      points.push(CORRIDOR_NODES.rajendrapurBypass);
+      points.push(CORRIDOR_NODES.mawnaJunction);
+      points.push(CORRIDOR_NODES.bhalukaHighway);
+      points.push(CORRIDOR_NODES.trishalJunction);
+      points.push(CORRIDOR_NODES.mymensinghBypass);
     }
   } else {
     // Inter-district cross connection: add natural curvature midpoint
@@ -264,6 +328,9 @@ export function calculateResidenceRoute(
   origin: ResidenceLocation,
   dest: Destination
 ): CalculatedRoute {
+  const cacheKey = `${origin.id}_${dest.id}`;
+  const cachedRealRoute = roadRouteCache.get(cacheKey);
+
   const straightDistanceKm = calculateHaversineKm(
     origin.latitude,
     origin.longitude,
@@ -273,17 +340,23 @@ export function calculateResidenceRoute(
 
   // Realistic highway road curvature factor (typically 1.25x - 1.35x of straight line in Bangladesh)
   const roadFactor = straightDistanceKm < 25 ? 1.15 : 1.32;
-  const roadDistanceKm = Math.round(straightDistanceKm * roadFactor);
+  const roadDistanceKm = cachedRealRoute
+    ? cachedRealRoute.distanceKm
+    : Math.round(straightDistanceKm * roadFactor);
 
   // Average highway cruising speed taking delta traffic into account (~50-55 km/h)
   const averageSpeedKmh = roadDistanceKm < 50 ? 35 : 55;
-  const roadDurationMinutes = Math.round((roadDistanceKm / averageSpeedKmh) * 60);
+  const roadDurationMinutes = cachedRealRoute
+    ? cachedRealRoute.durationMinutes
+    : Math.round((roadDistanceKm / averageSpeedKmh) * 60);
 
   const hours = Math.floor(roadDurationMinutes / 60);
   const mins = roadDurationMinutes % 60;
   const roadDurationText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 
-  const coordinates = generateHighwayRoutePoints(origin, dest);
+  const coordinates = cachedRealRoute
+    ? cachedRealRoute.coordinates
+    : generateHighwayRoutePoints(origin, dest);
 
   // Build Multi-Modal Transit Breakdown
   const modes: TransitModeDetail[] = [];

@@ -27,7 +27,7 @@ if (typeof window !== 'undefined') {
 import { ZoomIn, ZoomOut, RotateCcw, MapPin, Sparkles, X } from 'lucide-react';
 import { useMapStore } from '../../store/useMapStore';
 import { INITIAL_LANDMARKS } from '../../data/mockData';
-import { calculateResidenceRoute } from '../../data/routeEngine';
+import { calculateResidenceRoute, fetchRealRoadRoute } from '../../data/routeEngine';
 import {
   BANGLADESH_CENTER,
   BANGLADESH_DEFAULT_ZOOM,
@@ -87,6 +87,7 @@ export const MapCanvas: React.FC = () => {
 
   const [activeStyle, setActiveStyle] = useState<BaseMapStyle>('voyager');
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [activeRoadCoordinates, setActiveRoadCoordinates] = useState<[number, number][] | null>(null);
 
   // Filter landmarks based on active toggles and active division
   const visibleLandmarks = INITIAL_LANDMARKS.filter((item) => {
@@ -377,14 +378,36 @@ export const MapCanvas: React.FC = () => {
     }
   }, [selectedTrail, activeView, itineraryDays, flyToTarget]);
 
-  // Update Residence-to-Destination Highway Route Layer
+  // Fetch and sync direct turn-by-turn road route from OSRM
+  useEffect(() => {
+    let isMounted = true;
+    if (isRouteActive && selectedDestination && userResidence) {
+      // 1. Initial immediate baseline highway corridor points
+      const baseline = calculateResidenceRoute(userResidence, selectedDestination);
+      setActiveRoadCoordinates(baseline.coordinates);
+
+      // 2. Fetch turn-by-turn exact road geometry
+      fetchRealRoadRoute(userResidence, selectedDestination).then((realRoute) => {
+        if (isMounted && realRoute && realRoute.coordinates.length > 0) {
+          setActiveRoadCoordinates(realRoute.coordinates);
+        }
+      });
+    } else {
+      setActiveRoadCoordinates(null);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isRouteActive, selectedDestination, userResidence]);
+
+  // Render Residence-to-Destination Highway Route Layer on Map
   useEffect(() => {
     if (!mapRef.current || !routeLayerGroupRef.current) return;
     routeLayerGroupRef.current.clearLayers();
 
-    if (isRouteActive && selectedDestination && userResidence) {
-      const calculatedRoute = calculateResidenceRoute(userResidence, selectedDestination);
-      const points = calculatedRoute.coordinates;
+    if (isRouteActive && selectedDestination && userResidence && activeRoadCoordinates && activeRoadCoordinates.length > 0) {
+      const points = activeRoadCoordinates;
 
       // 1. Residence Origin Marker (Glowing home pin)
       const homeIcon = L.divIcon({
@@ -439,7 +462,7 @@ export const MapCanvas: React.FC = () => {
         mapRef.current.fitBounds(bounds, { padding: [90, 90], maxZoom: 10 });
       }
     }
-  }, [isRouteActive, selectedDestination, userResidence, flyToTarget]);
+  }, [isRouteActive, selectedDestination, userResidence, activeRoadCoordinates, flyToTarget]);
 
   // Render Landmark Markers
   useEffect(() => {
@@ -630,10 +653,12 @@ export const MapCanvas: React.FC = () => {
             </span>
             <button
               onClick={() => setIsRouteActive(false)}
-              className="w-5 h-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer ml-0.5 shrink-0"
-              title="Hide Route"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 text-[10px] font-extrabold transition-all cursor-pointer ml-1 shrink-0 shadow-xs"
+              title="Remove or Unselect Route from Map"
+              aria-label="Remove Route from Map"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5 text-rose-600" />
+              <span>Remove Route</span>
             </button>
           </div>
         </div>
@@ -699,18 +724,31 @@ export const MapCanvas: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating Re-Open Drawer Button (Shown if drawer is closed but landmark is selected) */}
+      {/* Floating Re-Open Drawer Button / Remove Route (Shown if drawer is closed but landmark is selected) */}
       {!isDrawerOpen && selectedDestination && activeView === 'explore' && (
-        <button
-          onClick={openDrawer}
-          className="absolute bottom-16 sm:bottom-4 right-3 sm:right-5 z-20 glass-panel px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-xl flex items-center gap-1.5 sm:gap-2 text-xs font-bold text-slate-800 hover:scale-105 transition-all cursor-pointer pointer-events-auto border border-emerald-400/40"
-          title="Open Selected Landmark Details"
-        >
-          <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
-          <span className="truncate max-w-[160px] sm:max-w-none">
-            View {selectedDestination.name}
-          </span>
-        </button>
+        <div className="absolute bottom-16 sm:bottom-4 right-3 sm:right-5 z-20 flex items-center gap-2 pointer-events-auto">
+          {isRouteActive && (
+            <button
+              onClick={() => setIsRouteActive(false)}
+              className="glass-panel px-3 py-1.5 sm:py-2 rounded-full shadow-xl flex items-center gap-1.5 text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50/90 hover:bg-rose-100 border border-rose-300 transition-all cursor-pointer shadow-rose-900/10"
+              title="Remove or Unselect Route from Map"
+              aria-label="Remove Route from Map"
+            >
+              <X className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+              <span>Remove Route</span>
+            </button>
+          )}
+          <button
+            onClick={openDrawer}
+            className="glass-panel px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-xl flex items-center gap-1.5 sm:gap-2 text-xs font-bold text-slate-800 hover:scale-105 transition-all cursor-pointer border border-emerald-400/40"
+            title="Open Selected Landmark Details"
+          >
+            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
+            <span className="truncate max-w-[160px] sm:max-w-none">
+              View {selectedDestination.name}
+            </span>
+          </button>
+        </div>
       )}
 
       {/* Floating Map Zoom / Reset Controls (Bottom Left) */}

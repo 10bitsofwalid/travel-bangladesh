@@ -67,12 +67,13 @@ describe('Residence to Destination Routing System', () => {
     expect(sylhetRoad?.operatorOrHighway).toContain('N2');
   });
 
-  it('renders DestinationDrawer with Residence Route Navigator and switches departure cities', () => {
+  it('renders DestinationDrawer with Residence Route Navigator and handles show, switch, and remove route options', () => {
     const sixtyDome = INITIAL_LANDMARKS.find((i) => i.id === 'poi-sixty-dome')!;
     act(() => {
       useMapStore.setState({
         selectedDestination: sixtyDome,
         isDrawerOpen: true,
+        isRouteActive: false,
       });
     });
 
@@ -80,7 +81,20 @@ describe('Residence to Destination Routing System', () => {
 
     // Check quick route strip under hero
     expect(screen.getByText(/From Dhaka/i)).toBeDefined();
-    expect(screen.getByText(/View Route/i)).toBeDefined();
+    const routeOnMapBtn = screen.getByRole('button', { name: /Route On Map/i });
+    expect(routeOnMapBtn).toBeDefined();
+
+    // Toggle route ON from quick strip
+    fireEvent.click(routeOnMapBtn);
+    expect(useMapStore.getState().isRouteActive).toBe(true);
+
+    // Now verify the button switched to "Remove Route"
+    const removeBtn = screen.getByRole('button', { name: /Remove Route/i });
+    expect(removeBtn).toBeDefined();
+
+    // Toggle route OFF (Unselect route)
+    fireEvent.click(removeBtn);
+    expect(useMapStore.getState().isRouteActive).toBe(false);
 
     // Click on TRAVEL ROUTES tab
     const routesTab = screen.getByText('TRAVEL ROUTES');
@@ -91,12 +105,20 @@ describe('Residence to Destination Routing System', () => {
     expect(screen.getByText('Show on Map')).toBeDefined();
     expect(screen.getByText(/Primary Corridor:/i)).toBeDefined();
 
-    // Toggle "Show on Map"
+    // Toggle "Show on Map" from routes tab
     const mapToggleBtn = screen.getByText('Show on Map');
     fireEvent.click(mapToggleBtn);
     expect(useMapStore.getState().isRouteActive).toBe(true);
 
-    // Switch departure residence to Chittagong
+    // Verify unselect route button appears and works
+    const unselectBtn = screen.getByRole('button', { name: /Unselect Route/i });
+    expect(unselectBtn).toBeDefined();
+    fireEvent.click(unselectBtn);
+    expect(useMapStore.getState().isRouteActive).toBe(false);
+
+    // Re-enable and switch departure residence to Chittagong
+    fireEvent.click(screen.getByText('Show on Map'));
+    expect(useMapStore.getState().isRouteActive).toBe(true);
     const selectElem = screen.getByLabelText('Select Departure Residence') as HTMLSelectElement;
     fireEvent.change(selectElem, { target: { value: 'res-chittagong' } });
     expect(useMapStore.getState().userResidence.id).toBe('res-chittagong');
@@ -108,7 +130,7 @@ describe('Residence to Destination Routing System', () => {
     expect(screen.getByText(/Bangladesh Railway/i)).toBeDefined();
   });
 
-  it('renders floating journey pill on MapCanvas when route is active', () => {
+  it('renders floating journey pill on MapCanvas and unselects route when clicked', () => {
     const sixtyDome = INITIAL_LANDMARKS.find((i) => i.id === 'poi-sixty-dome')!;
     act(() => {
       useMapStore.setState({
@@ -122,11 +144,11 @@ describe('Residence to Destination Routing System', () => {
     // Verify floating pill appears with origin and destination
     expect(screen.getByText('Dhaka')).toBeDefined();
     expect(screen.getAllByText(/Sixty Dome Mosque/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByTitle('Hide Route')).toBeDefined();
+    const removeBtns = screen.getAllByTitle('Remove or Unselect Route from Map');
+    expect(removeBtns.length).toBeGreaterThanOrEqual(1);
 
-    // Click hide route button
-    const hideBtn = screen.getByTitle('Hide Route');
-    fireEvent.click(hideBtn);
+    // Click remove route button
+    fireEvent.click(removeBtns[0]);
     expect(useMapStore.getState().isRouteActive).toBe(false);
   });
 });
