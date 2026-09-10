@@ -22,6 +22,7 @@ export const PlannerView: React.FC = () => {
     guides,
     selectedGuideId,
     setSelectedGuideId,
+    selectedTrail,
     setActiveView,
     showToast,
     flyToLocation
@@ -33,6 +34,14 @@ export const PlannerView: React.FC = () => {
   const [newDayLocation, setNewDayLocation] = useState('');
 
   const selectedGuide = guides.find((g) => g.id === selectedGuideId) || guides[0];
+
+  const trailTitle = selectedTrail === 'buddhist'
+    ? 'Buddhist Archaeology'
+    : selectedTrail === 'sylhet'
+    ? 'Sylhet Cloud Forest'
+    : selectedTrail === 'sundarbans'
+    ? 'Sundarbans Delta'
+    : 'Mughal History';
 
   // Dynamic cost calculation based on days count
   const daysCount = itineraryDays.length;
@@ -71,7 +80,7 @@ export const PlannerView: React.FC = () => {
   };
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-20 flex flex-col lg:flex-row justify-between p-3 sm:p-5 pt-16 sm:pt-20 pb-8 select-none overflow-y-auto lg:overflow-hidden gap-4 sm:gap-5 max-w-7xl mx-auto">
+    <div className="absolute inset-0 pointer-events-auto z-20 flex flex-col lg:flex-row justify-between p-3 sm:p-5 pt-16 sm:pt-20 pb-8 select-none overflow-y-auto lg:overflow-hidden gap-4 sm:gap-5 max-w-7xl mx-auto">
       
       {/* Left Panel: BUILD ITINERARY: 7-DAY EXPLORATION */}
       <aside className="w-full lg:w-[360px] xl:w-[400px] lg:flex-1 glass-panel rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col pointer-events-auto h-auto lg:h-[calc(100vh-100px)] border border-white/80 shrink-0">
@@ -363,7 +372,7 @@ export const PlannerView: React.FC = () => {
                 REAL-TIME TOTAL
               </span>
               <div className="text-xs font-bold text-slate-800 mt-1">
-                Mughal History ({daysCount} Days Planned)
+                {trailTitle} ({daysCount} Days Planned)
               </div>
             </div>
 
@@ -387,18 +396,18 @@ export const PlannerView: React.FC = () => {
               </span>
               <div className="space-y-1 font-mono text-slate-700">
                 <div className="flex justify-between">
-                  <span>Total Cost:</span>
-                  <span className="font-bold">$340</span>
+                  <span>Guide Services ({daysCount}d @ $30/d):</span>
+                  <span className="font-bold">${guideFee}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Total Cost:</span>
-                  <span className="font-bold">$130</span>
+                  <span>Logistics & Permits:</span>
+                  <span className="font-bold">${logisticsFee}</span>
                 </div>
               </div>
             </div>
 
             <div className="flex justify-between font-mono font-extrabold text-slate-900 pt-2 border-t border-slate-200/80">
-              <span>Total Total:</span>
+              <span>Estimated Total:</span>
               <span className="text-emerald-700 font-black">${totalCost}</span>
             </div>
           </div>

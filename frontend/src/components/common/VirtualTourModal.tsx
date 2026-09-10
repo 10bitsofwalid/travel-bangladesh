@@ -277,9 +277,9 @@ export const VirtualTourModal: React.FC = () => {
           >
             {/* Render seamless dual panorama to simulate full infinite rotation */}
             <div
-              className="flex w-[320%] max-w-none h-full select-none"
+              className="flex w-[200%] max-w-none h-full select-none will-change-transform"
               style={{
-                transform: `translateX(${((rotation % 100) * 4.5)}px)`,
+                transform: `translateX(-${(((rotation % 360) + 360) % 360) / 360 * 50}%)`,
               }}
             >
               <img

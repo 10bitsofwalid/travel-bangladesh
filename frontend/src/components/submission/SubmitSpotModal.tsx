@@ -28,15 +28,17 @@ export const SubmitSpotModal: React.FC = () => {
   );
   const [folkloreText, setFolkloreText] = useState('Auto-complete');
   const [rotationAngle, setRotationAngle] = useState(0);
+  const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
 
   if (!isSubmitSpotOpen) return null;
 
   const timelineItems = [
-    { year: '1678', label: 'Construction' },
-    { year: '1888', label: 'British Acquisition' },
-    { year: '1888', label: 'British Acquisition' },
-    { year: '1986', label: 'British Communities' },
-    { year: '1937', label: 'British Countures' },
+    { year: '1678', label: 'French Trading Kuthi & Early Construction' },
+    { year: '1830', label: 'Nawab Family Acquisition & Estate Expansion' },
+    { year: '1872', label: 'Grand Palace Completion & Dedication' },
+    { year: '1888', label: 'Post-Tornado Octagonal Dome Reconstruction' },
+    { year: '1906', label: 'All India Muslim League Historic Summit' },
+    { year: '1985', label: 'National Heritage Monument Declaration' },
   ];
 
   const handleNext = () => {
@@ -151,7 +153,15 @@ export const SubmitSpotModal: React.FC = () => {
                     <label className="text-xs font-bold text-slate-600 uppercase">Division</label>
                     <select
                       value={division}
-                      onChange={(e) => setDivision(e.target.value)}
+                      onChange={(e) => {
+                        const newDiv = e.target.value;
+                        setDivision(newDiv);
+                        if (newDiv === 'Sylhet') setDistrict('Moulvibazar');
+                        else if (newDiv === 'Rajshahi') setDistrict('Naogaon');
+                        else if (newDiv === 'Khulna') setDistrict('Bagerhat');
+                        else if (newDiv === 'Chittagong') setDistrict("Cox's Bazar");
+                        else setDistrict(newDiv);
+                      }}
                       className="w-full text-xs font-bold text-slate-900 bg-white/80 px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-400/40 mt-1"
                     >
                       {['Dhaka', 'Chittagong', 'Sylhet', 'Rajshahi', 'Khulna', 'Barisal', 'Rangpur', 'Mymensingh'].map((d) => (
@@ -165,6 +175,7 @@ export const SubmitSpotModal: React.FC = () => {
                       type="text"
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
+                      placeholder="e.g. Dhaka, Bagerhat, Bogra"
                       className="w-full text-xs font-bold text-slate-900 bg-white/80 px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-400/40 mt-1"
                     />
                   </div>
@@ -317,8 +328,9 @@ export const SubmitSpotModal: React.FC = () => {
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
                     <button
+                      onClick={() => setIsFullscreenPreview(true)}
                       className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all shadow-md cursor-pointer"
-                      title="Fullscreen"
+                      title="Fullscreen Preview"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
                     </button>
@@ -502,6 +514,54 @@ export const SubmitSpotModal: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Fullscreen 3D Viewport Lightbox */}
+      {isFullscreenPreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in"
+          onClick={() => setIsFullscreenPreview(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl max-h-[85vh] rounded-3xl overflow-hidden glass-panel p-2 shadow-2xl border border-white/40"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-3 border-b border-slate-200/60">
+              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                {landmarkTitle} · 3D Photogrammetry View
+              </span>
+              <button
+                onClick={() => setIsFullscreenPreview(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="relative h-[65vh] rounded-2xl overflow-hidden bg-slate-950 mt-2 flex items-center justify-center">
+              <img
+                src="https://images.unsplash.com/photo-1582650625119-3a31f8418b7d?auto=format&fit=crop&w=1600&q=85"
+                alt="3D Expanded Preview"
+                className="w-full h-full object-cover transition-transform duration-300"
+                style={{ transform: `rotateY(${rotationAngle}deg)` }}
+              />
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-white text-xs">
+                <button
+                  onClick={() => setRotationAngle((prev) => (prev - 45 + 360) % 360)}
+                  className="p-1 hover:text-emerald-400 cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+                <span className="font-mono text-[11px] font-bold">Angle: {rotationAngle}°</span>
+                <button
+                  onClick={() => setRotationAngle((prev) => (prev + 45) % 360)}
+                  className="p-1 hover:text-emerald-400 cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4 rotate-180" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -144,12 +144,12 @@ export const Navbar: React.FC = () => {
           </div>
         )}
 
-        {/* When in Account or Planner, provide a right-hand back to map button */}
+        {/* When in Account or Planner, provide a right-hand back to map button on desktop/tablet */}
         {activeView !== 'explore' && (
           <div className="flex items-center gap-2 pointer-events-auto shrink-0">
             <button
               onClick={() => setActiveView('explore')}
-              className="glass-panel px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold text-slate-800 hover:bg-white/95 shadow-xl transition-all cursor-pointer border border-white/80"
+              className="glass-panel px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold text-slate-800 hover:bg-white/95 shadow-xl transition-all cursor-pointer border border-white/80 hidden sm:flex items-center gap-1"
             >
               Back to Map
             </button>

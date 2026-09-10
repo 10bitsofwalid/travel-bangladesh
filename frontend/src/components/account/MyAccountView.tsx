@@ -296,13 +296,12 @@ export const MyAccountView: React.FC = () => {
                 <div className="flex items-center justify-between pt-1">
                   <div className="flex items-center gap-1.5">
                     <span className="badge-approved">Approved</span>
-                    <span className="badge-in-review">In-Review</span>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
                   <span>Contribution points {MOCK_CONTRIBUTIONS[2].points}</span>
-                  <span>Modified on Jan 14, 2021 | Thu, July 20, 2021</span>
+                  <span>Modified on {MOCK_CONTRIBUTIONS[2].modifiedDate}</span>
                 </div>
               </div>
             </div>

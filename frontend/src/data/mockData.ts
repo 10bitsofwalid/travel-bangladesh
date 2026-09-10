@@ -1432,7 +1432,7 @@ export const MOCK_CONTRIBUTIONS: ContributionItem[] = [
     category: 'VR & 3D Heritage',
     status: 'Approved',
     points: 10,
-    modifiedDate: 'Jan 14, 2021 | Thu, July 20, 2021',
+    modifiedDate: 'Jul 20, 2021',
     imageUrl: 'https://images.unsplash.com/photo-1596895111956-bf1cf0599ce5?auto=format&fit=crop&w=500&q=80',
     isVideoOrVr: true
   }
@@ -1449,11 +1449,11 @@ export const MOCK_SAVED_ITINERARIES: SavedItinerary[] = [
   },
   {
     id: 'itin-2',
-    title: '7-Day Mughal Heritage Trail (Starts: Oct 12)',
-    guideLink: 'Guide Link',
-    travelMapLink: 'Travel Link',
-    mapPreviewImage: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=240&q=80',
-    durationDays: 7
+    title: '5-Day Sylhet Tea & Cloud Forest Trail (Starts: Nov 04)',
+    guideLink: 'Sylhet Guide',
+    travelMapLink: 'Scenic Trail Map',
+    mapPreviewImage: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=240&q=80',
+    durationDays: 5
   }
 ];
 

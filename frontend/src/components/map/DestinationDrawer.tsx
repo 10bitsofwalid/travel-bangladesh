@@ -18,9 +18,13 @@ import {
   Car,
   Ship,
   Eye,
-  ShieldCheck
+  ShieldCheck,
+  Home,
+  ArrowRight,
+  Route
 } from 'lucide-react';
 import { useMapStore } from '../../store/useMapStore';
+import { calculateResidenceRoute, RESIDENCE_PRESETS } from '../../data/routeEngine';
 
 export const DestinationDrawer: React.FC = () => {
   const {
@@ -33,10 +37,20 @@ export const DestinationDrawer: React.FC = () => {
     setSelectedGuideId,
     guides,
     setLightboxImage,
+    userResidence,
+    setUserResidence,
+    isRouteActive,
+    setIsRouteActive,
+    activeTransportMode,
+    setActiveTransportMode,
   } = useMapStore();
 
   const [activeTab, setActiveTab] = useState<'bestTime' | 'entry' | 'routes' | 'documents' | 'timeline'>('bestTime');
   const [isAddedToItinerary, setIsAddedToItinerary] = useState(false);
+
+  const residenceRoute = selectedDestination
+    ? calculateResidenceRoute(userResidence, selectedDestination)
+    : null;
 
   if (!isDrawerOpen || !selectedDestination) return null;
 
@@ -157,6 +171,40 @@ export const DestinationDrawer: React.FC = () => {
           </div>
         )}
 
+        {/* Residence Route Quick Strip */}
+        {residenceRoute && (
+          <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-2xl border border-emerald-200/80 shadow-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Home className="w-3.5 h-3.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1 text-[11px] font-bold text-slate-800 truncate">
+                  <span>From {userResidence.name}</span>
+                  <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
+                  <span className="text-emerald-700 font-extrabold">{residenceRoute.roadDistanceKm} km</span>
+                </div>
+                <div className="text-[10px] text-slate-500 truncate">
+                  ~{residenceRoute.roadDurationText} via {(residenceRoute.modes.find((m) => m.mode === 'road')?.operatorOrHighway || 'National Highway').split('&')[0].trim()}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setActiveTab('routes');
+                setIsRouteActive(true);
+              }}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wide uppercase transition-all shrink-0 cursor-pointer shadow-xs ${
+                isRouteActive
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'bg-white text-emerald-700 border border-emerald-300 hover:bg-emerald-50'
+              }`}
+            >
+              {isRouteActive ? 'Route On Map' : 'View Route'}
+            </button>
+          </div>
+        )}
+
         {/* Historical Chronicles */}
         <div className="space-y-1">
           <h4 className="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1">
@@ -205,11 +253,12 @@ export const DestinationDrawer: React.FC = () => {
             <div className="flex items-center gap-1">
               {selectedDestination.timeline.length > 0 ? (
                 <div className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 group-hover:bg-emerald-100">
-                  {selectedDestination.timeline[0]?.year} · {selectedDestination.timeline[selectedDestination.timeline.length - 1]?.year}
+                  {selectedDestination.timeline[0]?.year}
+                  {selectedDestination.timeline.length > 1 && ` · ${selectedDestination.timeline[selectedDestination.timeline.length - 1]?.year}`}
                 </div>
               ) : (
                 <div className="text-[10px] font-mono text-slate-500 font-bold">
-                  1678 · 1888
+                  {selectedDestination.heritageDetail?.builtYear || 'Heritage Site'}
                 </div>
               )}
             </div>
@@ -229,6 +278,33 @@ export const DestinationDrawer: React.FC = () => {
               5.0 ({selectedDestination.reviewCount} reviews)
             </span>
           </div>
+        </div>
+
+        {/* Primary Action Buttons: ADD TO ITINERARY | BOOK GUIDE */}
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <button
+            onClick={handleAddToItinerary}
+            className={`py-2.5 px-3 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
+              isAddedToItinerary
+                ? 'bg-emerald-600 text-white shadow-emerald-500/30'
+                : 'bg-white/90 hover:bg-white text-slate-800 border border-slate-200 hover:border-emerald-300'
+            }`}
+          >
+            {isAddedToItinerary ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-white" />
+                <span>ADDED TO PLANNER!</span>
+              </>
+            ) : (
+              <span>ADD TO ITINERARY</span>
+            )}
+          </button>
+          <button
+            onClick={handleBookGuide}
+            className="py-2.5 px-3 rounded-full text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <span>BOOK GUIDE</span>
+          </button>
         </div>
 
         {/* Quick Tabs: BEST TIME TO VISIT | ENTRY DETAILS | TRAVEL ROUTES | DOCUMENTS | TIMELINE */}
@@ -363,42 +439,203 @@ export const DestinationDrawer: React.FC = () => {
 
             {/* 3. Travel Routes Tab */}
             {activeTab === 'routes' && (
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <Navigation className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <span className="font-bold text-slate-800 block">Access Summary</span>
-                    <p className="text-slate-600 mt-0.5">{selectedDestination.travelRoutesSummary || 'Accessible via inter-district highways and local transit.'}</p>
-                  </div>
-                </div>
-                {selectedDestination.transportationGuide && (
-                  <div className="space-y-1.5 pt-1.5 border-t border-slate-200/60 text-[11px]">
-                    {selectedDestination.transportationGuide.train && (
-                      <div className="flex items-start gap-1.5 text-slate-600">
-                        <Train className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                        <span><strong>Rail:</strong> {selectedDestination.transportationGuide.train}</span>
+              <div className="space-y-3">
+                {/* Residence-to-Destination Route Navigator */}
+                {residenceRoute && (
+                  <div className="p-3 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl shadow-md space-y-3">
+                    {/* Header with Origin Selector */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-xs font-black tracking-wide uppercase text-emerald-400">
+                          <Home className="w-3.5 h-3.5" />
+                          <span>Journey From Residence</span>
+                        </div>
+                        <button
+                          onClick={() => setIsRouteActive(!isRouteActive)}
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                            isRouteActive
+                              ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/50'
+                              : 'bg-white/10 hover:bg-white/20 text-slate-300 border border-white/20'
+                          }`}
+                        >
+                          {isRouteActive ? '● Map Route Active' : 'Show on Map'}
+                        </button>
                       </div>
-                    )}
-                    {selectedDestination.transportationGuide.air && (
-                      <div className="flex items-start gap-1.5 text-slate-600">
-                        <Plane className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
-                        <span><strong>Air:</strong> {selectedDestination.transportationGuide.air}</span>
+
+                      {/* Origin dropdown selector */}
+                      <div className="flex items-center gap-2 bg-white/10 p-1.5 rounded-xl border border-white/10">
+                        <span className="text-[10px] font-bold text-slate-300 shrink-0 pl-1">Departure:</span>
+                        <select
+                          value={userResidence.id}
+                          onChange={(e) => {
+                            const found = RESIDENCE_PRESETS.find((p) => p.id === e.target.value);
+                            if (found) {
+                              setUserResidence(found);
+                              setIsRouteActive(true);
+                            }
+                          }}
+                          className="w-full bg-transparent text-xs font-bold text-white focus:outline-hidden cursor-pointer [&>option]:bg-slate-900 [&>option]:text-white"
+                          aria-label="Select Departure Residence"
+                        >
+                          {RESIDENCE_PRESETS.map((preset) => (
+                            <option key={preset.id} value={preset.id}>
+                              {preset.name} ({preset.bnName}) - {preset.district}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    )}
-                    {selectedDestination.transportationGuide.road && (
-                      <div className="flex items-start gap-1.5 text-slate-600">
-                        <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                        <span><strong>Road:</strong> {selectedDestination.transportationGuide.road}</span>
+                    </div>
+
+                    {/* Quick Metric Stats */}
+                    <div className="grid grid-cols-3 gap-1.5 text-center">
+                      <div className="bg-white/10 rounded-xl p-2 border border-white/10">
+                        <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold block">Distance</span>
+                        <span className="text-sm font-black text-emerald-300">{residenceRoute.roadDistanceKm} km</span>
                       </div>
-                    )}
-                    {selectedDestination.transportationGuide.water && (
-                      <div className="flex items-start gap-1.5 text-slate-600">
-                        <Ship className="w-3.5 h-3.5 text-cyan-600 shrink-0 mt-0.5" />
-                        <span><strong>Water:</strong> {selectedDestination.transportationGuide.water}</span>
+                      <div className="bg-white/10 rounded-xl p-2 border border-white/10">
+                        <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold block">Drive Time</span>
+                        <span className="text-sm font-black text-amber-300">{residenceRoute.roadDurationText}</span>
                       </div>
-                    )}
+                      <div className="bg-white/10 rounded-xl p-2 border border-white/10">
+                        <span className="text-[9px] uppercase tracking-wider text-slate-300 font-bold block">Key Highway</span>
+                        <span className="text-[10px] font-extrabold text-cyan-300 leading-tight block truncate mt-0.5" title={residenceRoute.modes.find((m) => m.mode === 'road')?.operatorOrHighway || 'National Highway'}>
+                          {(residenceRoute.modes.find((m) => m.mode === 'road')?.operatorOrHighway || 'National Highway').split('&')[0].trim()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Corridor Pill */}
+                    <div className="text-[10px] bg-emerald-950/70 border border-emerald-500/30 text-emerald-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
+                      <Route className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="truncate"><strong>Primary Corridor:</strong> {residenceRoute.modes.find((m) => m.mode === 'road')?.operatorOrHighway || 'National Highway'}</span>
+                    </div>
+
+                    {/* Transit Mode Tabs */}
+                    <div className="space-y-2 pt-1 border-t border-white/10">
+                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-300 flex items-center justify-between">
+                        <span>Available Transit Options</span>
+                        <span className="text-[9px] text-slate-400 font-normal">Select mode</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1">
+                        {(['road', 'rail', 'air', 'water'] as const).map((mode) => {
+                          const option = residenceRoute.modes.find((o) => o.mode === mode);
+                          const isSelected = activeTransportMode === mode;
+                          const icon = mode === 'road' ? <Car className="w-3.5 h-3.5" />
+                                     : mode === 'rail' ? <Train className="w-3.5 h-3.5" />
+                                     : mode === 'air' ? <Plane className="w-3.5 h-3.5" />
+                                     : <Ship className="w-3.5 h-3.5" />;
+                          return (
+                            <button
+                              key={mode}
+                              onClick={() => {
+                                setActiveTransportMode(mode);
+                                setIsRouteActive(true);
+                              }}
+                              className={`flex flex-col items-center justify-center p-1.5 rounded-xl text-center transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
+                                  : 'bg-white/10 hover:bg-white/20 text-slate-200 font-semibold'
+                              } ${!option ? 'opacity-40' : ''}`}
+                            >
+                              {icon}
+                              <span className="text-[9px] uppercase tracking-wider mt-0.5">{mode}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Active Transit Mode Detail Card */}
+                      {(() => {
+                        const currentOption = residenceRoute.modes.find((o) => o.mode === activeTransportMode);
+                        if (!currentOption) {
+                          return (
+                            <div className="p-2.5 bg-white/10 rounded-xl border border-white/10 text-xs text-slate-300">
+                              <span className="font-bold text-amber-300">No Direct {activeTransportMode.toUpperCase()} Route</span>
+                              <p className="text-[11px] text-slate-400 mt-0.5">Please select Road or Rail for direct transit from {userResidence.name}.</p>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="p-2.5 bg-white/10 rounded-xl border border-white/10 space-y-1.5 text-xs text-slate-200">
+                            <div className="flex items-center justify-between">
+                              <span className="font-extrabold capitalize text-white flex items-center gap-1">
+                                {activeTransportMode === 'road' && <Car className="w-3.5 h-3.5 text-amber-400" />}
+                                {activeTransportMode === 'rail' && <Train className="w-3.5 h-3.5 text-emerald-400" />}
+                                {activeTransportMode === 'air' && <Plane className="w-3.5 h-3.5 text-blue-400" />}
+                                {activeTransportMode === 'water' && <Ship className="w-3.5 h-3.5 text-cyan-400" />}
+                                {currentOption.label}
+                              </span>
+                              <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">
+                                {currentOption.durationText}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-emerald-200 font-semibold leading-snug">
+                              Fare: {currentOption.estimatedCost}
+                            </p>
+                            <p className="text-[11px] text-slate-300 leading-snug">
+                              {currentOption.notes}
+                            </p>
+                            {currentOption.steps && currentOption.steps.length > 0 && (
+                              <div className="space-y-1 pt-1.5 border-t border-white/10 text-[10px]">
+                                {currentOption.steps.map((step, sIdx) => (
+                                  <div key={sIdx} className="flex items-start gap-1.5 text-slate-300">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1 shrink-0" />
+                                    <span>
+                                      <strong>{step.instruction}</strong> — {step.detail}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-white/10">
+                              <span>Timing: {currentOption.recommendedTime}</span>
+                              <span>{currentOption.frequency}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
+
+                {/* Legacy / Official Access Summary & Destination Guide */}
+                <div className="space-y-2 pt-2 border-t border-slate-200/80">
+                  <div className="flex items-start gap-2">
+                    <Navigation className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <span className="font-bold text-slate-800 block">Access Summary</span>
+                      <p className="text-slate-600 mt-0.5">{selectedDestination.travelRoutesSummary || 'Accessible via inter-district highways and local transit.'}</p>
+                    </div>
+                  </div>
+                  {selectedDestination.transportationGuide && (
+                    <div className="space-y-1.5 pt-1.5 border-t border-slate-200/60 text-[11px]">
+                      {selectedDestination.transportationGuide.train && (
+                        <div className="flex items-start gap-1.5 text-slate-600">
+                          <Train className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span><strong>Rail:</strong> {selectedDestination.transportationGuide.train}</span>
+                        </div>
+                      )}
+                      {selectedDestination.transportationGuide.air && (
+                        <div className="flex items-start gap-1.5 text-slate-600">
+                          <Plane className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                          <span><strong>Air:</strong> {selectedDestination.transportationGuide.air}</span>
+                        </div>
+                      )}
+                      {selectedDestination.transportationGuide.road && (
+                        <div className="flex items-start gap-1.5 text-slate-600">
+                          <Car className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <span><strong>Road:</strong> {selectedDestination.transportationGuide.road}</span>
+                        </div>
+                      )}
+                      {selectedDestination.transportationGuide.water && (
+                        <div className="flex items-start gap-1.5 text-slate-600">
+                          <Ship className="w-3.5 h-3.5 text-cyan-600 shrink-0 mt-0.5" />
+                          <span><strong>Water:</strong> {selectedDestination.transportationGuide.water}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -517,33 +754,6 @@ export const DestinationDrawer: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Action Buttons: ADD TO ITINERARY | BOOK GUIDE */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          <button
-            onClick={handleAddToItinerary}
-            className={`py-2.5 px-3 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
-              isAddedToItinerary
-                ? 'bg-emerald-600 text-white shadow-emerald-500/30'
-                : 'bg-white/80 hover:bg-white text-slate-800 border border-slate-200'
-            }`}
-          >
-            {isAddedToItinerary ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-white" />
-                <span>ADDED TO PLANNER!</span>
-              </>
-            ) : (
-              <span>ADD TO ITINERARY</span>
-            )}
-          </button>
-          <button
-            onClick={handleBookGuide}
-            className="py-2.5 px-3 rounded-full text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <span>BOOK GUIDE</span>
-          </button>
         </div>
 
         {/* User Contributions Section */}

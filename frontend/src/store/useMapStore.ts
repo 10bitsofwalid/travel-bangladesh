@@ -13,6 +13,7 @@ import {
   MOCK_ITINERARY_DAYS,
   MOCK_VERIFIED_GUIDES
 } from '../data/mockData';
+import { ResidenceLocation, RESIDENCE_PRESETS } from '../data/routeEngine';
 
 interface MapViewport {
   longitude: number;
@@ -69,6 +70,11 @@ interface MapState {
   selectedGuideId: string;
   guides: VerifiedGuide[];
 
+  // Residence & Route Navigation
+  userResidence: ResidenceLocation;
+  isRouteActive: boolean;
+  activeTransportMode: 'road' | 'rail' | 'air' | 'water';
+
   // Actions
   setViewport: (viewport: Partial<MapViewport>) => void;
   setBounds: (bounds: [number, number, number, number]) => void;
@@ -99,6 +105,10 @@ interface MapState {
   addContribution: (contribution: ContributionItem) => void;
   updateUserProfile: (updates: Partial<UserProfile>) => void;
   updateGamificationProgress: (progress: number) => void;
+  setUserResidence: (residence: ResidenceLocation) => void;
+  setIsRouteActive: (active: boolean) => void;
+  toggleRouteActive: () => void;
+  setActiveTransportMode: (mode: 'road' | 'rail' | 'air' | 'water') => void;
 }
 
 const DEFAULT_VIEWPORT: MapViewport = {
@@ -128,7 +138,7 @@ export const useMapStore = create<MapState>((set, get) => ({
     culture: true,
     unesco: true,
   },
-  selectedTrail: 'mughal', // default to Mughal trail
+  selectedTrail: null, // Do not select any trails initially (starts clean)
 
   selectedDestination: INITIAL_LANDMARKS[0], // Ahsan Manzil by default
   isDrawerOpen: true,
@@ -145,6 +155,11 @@ export const useMapStore = create<MapState>((set, get) => ({
   activeItineraryDay: 1,
   selectedGuideId: 'guide-1',
   guides: MOCK_VERIFIED_GUIDES,
+
+  // Residence & Route Navigation
+  userResidence: RESIDENCE_PRESETS[0], // Default to Dhaka
+  isRouteActive: false,
+  activeTransportMode: 'road',
 
   setViewport: (newViewport) =>
     set((state) => ({ viewport: { ...state.viewport, ...newViewport } })),
@@ -383,4 +398,9 @@ export const useMapStore = create<MapState>((set, get) => ({
         },
       },
     })),
+
+  setUserResidence: (userResidence) => set({ userResidence, isRouteActive: true }),
+  setIsRouteActive: (isRouteActive) => set({ isRouteActive }),
+  toggleRouteActive: () => set((state) => ({ isRouteActive: !state.isRouteActive })),
+  setActiveTransportMode: (activeTransportMode) => set({ activeTransportMode }),
 }));

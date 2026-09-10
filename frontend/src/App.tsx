@@ -70,12 +70,12 @@ const MainLayout: React.FC = () => {
           onClick={() => setLightboxImage(null)}
         >
           <div
-            className="relative max-w-4xl max-h-[88vh] rounded-3xl overflow-hidden glass-panel p-2 shadow-2xl border border-white/40 cursor-default"
+            className="relative max-w-4xl max-h-[88vh] rounded-3xl overflow-hidden bg-slate-950/90 backdrop-blur-2xl p-2 shadow-2xl border border-white/20 cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setLightboxImage(null)}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center shadow-lg transition-all z-10 cursor-pointer"
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center shadow-lg transition-all z-10 cursor-pointer backdrop-blur-md"
               title="Close Preview"
             >
               <X className="w-5 h-5" />
@@ -87,7 +87,7 @@ const MainLayout: React.FC = () => {
             />
             {lightboxImage.title && (
               <div className="p-3 text-center">
-                <span className="text-xs font-bold text-slate-800 tracking-wide uppercase">
+                <span className="text-xs font-bold text-slate-200 tracking-wider uppercase">
                   {lightboxImage.title}
                 </span>
               </div>

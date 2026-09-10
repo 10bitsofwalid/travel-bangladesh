@@ -24,9 +24,10 @@ if (typeof window !== 'undefined') {
     };
   }
 }
-import { ZoomIn, ZoomOut, RotateCcw, MapPin, Sparkles } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, MapPin, Sparkles, X } from 'lucide-react';
 import { useMapStore } from '../../store/useMapStore';
 import { INITIAL_LANDMARKS } from '../../data/mockData';
+import { calculateResidenceRoute } from '../../data/routeEngine';
 import {
   BANGLADESH_CENTER,
   BANGLADESH_DEFAULT_ZOOM,
@@ -71,6 +72,9 @@ export const MapCanvas: React.FC = () => {
     isDrawerOpen,
     openDrawer,
     itineraryDays,
+    userResidence,
+    isRouteActive,
+    setIsRouteActive,
   } = useMapStore();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -79,6 +83,7 @@ export const MapCanvas: React.FC = () => {
   const markersLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const divisionsLayerGroupRef = useRef<L.GeoJSON | null>(null);
   const trailsLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const routeLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
   const [activeStyle, setActiveStyle] = useState<BaseMapStyle>('voyager');
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -162,6 +167,9 @@ export const MapCanvas: React.FC = () => {
 
     const trailsGroup = L.layerGroup().addTo(map);
     trailsLayerGroupRef.current = trailsGroup;
+
+    const routeGroup = L.layerGroup().addTo(map);
+    routeLayerGroupRef.current = routeGroup;
 
     const markersGroup = L.layerGroup().addTo(map);
     markersLayerGroupRef.current = markersGroup;
@@ -369,6 +377,70 @@ export const MapCanvas: React.FC = () => {
     }
   }, [selectedTrail, activeView, itineraryDays, flyToTarget]);
 
+  // Update Residence-to-Destination Highway Route Layer
+  useEffect(() => {
+    if (!mapRef.current || !routeLayerGroupRef.current) return;
+    routeLayerGroupRef.current.clearLayers();
+
+    if (isRouteActive && selectedDestination && userResidence) {
+      const calculatedRoute = calculateResidenceRoute(userResidence, selectedDestination);
+      const points = calculatedRoute.coordinates;
+
+      // 1. Residence Origin Marker (Glowing home pin)
+      const homeIcon = L.divIcon({
+        className: 'residence-home-marker',
+        html: `
+          <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px;">
+            <div style="position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(59, 130, 246, 0.35); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: #1e40af; border: 2.5px solid #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(30, 64, 175, 0.5); font-size: 15px;">
+              🏠
+            </div>
+          </div>
+        `,
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
+      });
+
+      const homeMarker = L.marker([userResidence.latitude, userResidence.longitude], { icon: homeIcon });
+      homeMarker.bindTooltip(
+        `<div class="font-bold text-xs text-slate-900">🏠 ${userResidence.name} (Residence)</div><div class="text-[10px] text-slate-500">${userResidence.district}</div>`,
+        { direction: 'top', offset: [0, -18], permanent: false }
+      );
+      homeMarker.addTo(routeLayerGroupRef.current);
+
+      // 2. Dual-Layer Glowing Corridor Polyline
+      // Outer ambient glow
+      L.polyline(points, {
+        color: '#0284c7',
+        weight: 7,
+        opacity: 0.35,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(routeLayerGroupRef.current);
+
+      // Inner animated dashed polyline
+      L.polyline(points, {
+        color: '#0ea5e9',
+        weight: 3.5,
+        opacity: 0.95,
+        dashArray: '8, 10',
+        className: 'leaflet-animated-trail',
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(routeLayerGroupRef.current);
+
+      // 3. Fit bounds so both Residence and Destination are cleanly visible
+      if (!flyToTarget) {
+        const bounds = L.latLngBounds([
+          [userResidence.latitude, userResidence.longitude],
+          [selectedDestination.latitude, selectedDestination.longitude],
+          ...points,
+        ]);
+        mapRef.current.fitBounds(bounds, { padding: [90, 90], maxZoom: 10 });
+      }
+    }
+  }, [isRouteActive, selectedDestination, userResidence, flyToTarget]);
+
   // Render Landmark Markers
   useEffect(() => {
     if (!mapRef.current || !markersLayerGroupRef.current) return;
@@ -539,6 +611,34 @@ export const MapCanvas: React.FC = () => {
       role="region"
       aria-label="Interactive Map of Bangladesh"
     >
+      {/* Active Route Floating Journey Pill on Map */}
+      {isRouteActive && selectedDestination && activeView === 'explore' && (
+        <div className="absolute top-[116px] sm:top-[128px] left-1/2 -translate-x-1/2 z-30 pointer-events-auto select-none max-w-[calc(100vw-24px)] animate-in fade-in slide-in-from-top-3">
+          <div className="glass-panel px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-2xl border border-sky-400/50 bg-white/95 backdrop-blur-md flex items-center gap-2 sm:gap-2.5 text-xs font-bold text-slate-800">
+            <div className="flex items-center gap-1.5 text-sky-700 shrink-0">
+              <span className="text-sm">🏠</span>
+              <span className="font-extrabold">{userResidence.name}</span>
+            </div>
+            <span className="text-slate-400 font-mono shrink-0">➔</span>
+            <div className="flex items-center gap-1.5 text-emerald-700 truncate max-w-[120px] sm:max-w-[220px]">
+              <span className="text-sm">📍</span>
+              <span className="truncate">{selectedDestination.name}</span>
+            </div>
+            <div className="h-3 w-px bg-slate-200 shrink-0" />
+            <span className="text-[11px] font-mono text-slate-600 font-bold whitespace-nowrap shrink-0 hidden xs:inline">
+              {calculateResidenceRoute(userResidence, selectedDestination).roadDistanceKm} km
+            </span>
+            <button
+              onClick={() => setIsRouteActive(false)}
+              className="w-5 h-5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer ml-0.5 shrink-0"
+              title="Hide Route"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Center Bar: Segmented Map Visual Style Switcher & Coordinate Status */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1.5 pointer-events-auto select-none max-w-[calc(100vw-24px)]">
         {/* Sleek Segmented Switcher */}
@@ -603,7 +703,7 @@ export const MapCanvas: React.FC = () => {
       {!isDrawerOpen && selectedDestination && activeView === 'explore' && (
         <button
           onClick={openDrawer}
-          className="absolute bottom-3 sm:bottom-4 right-3 sm:right-5 z-20 glass-panel px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-xl flex items-center gap-1.5 sm:gap-2 text-xs font-bold text-slate-800 hover:scale-105 transition-all cursor-pointer pointer-events-auto border border-emerald-400/40"
+          className="absolute bottom-16 sm:bottom-4 right-3 sm:right-5 z-20 glass-panel px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-xl flex items-center gap-1.5 sm:gap-2 text-xs font-bold text-slate-800 hover:scale-105 transition-all cursor-pointer pointer-events-auto border border-emerald-400/40"
           title="Open Selected Landmark Details"
         >
           <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
@@ -614,7 +714,7 @@ export const MapCanvas: React.FC = () => {
       )}
 
       {/* Floating Map Zoom / Reset Controls (Bottom Left) */}
-      <div className="absolute bottom-4 left-3 sm:left-5 z-20 flex flex-col gap-1 sm:gap-1.5 glass-panel p-1 sm:p-1.5 rounded-2xl shadow-xl pointer-events-auto border border-white/80">
+      <div className="absolute bottom-16 sm:bottom-4 left-3 sm:left-5 z-20 flex flex-col gap-1 sm:gap-1.5 glass-panel p-1 sm:p-1.5 rounded-2xl shadow-xl pointer-events-auto border border-white/80">
         <button
           onClick={handleZoomIn}
           className="p-1.5 sm:p-2 rounded-xl text-slate-700 hover:bg-white hover:text-emerald-700 transition-colors cursor-pointer"
